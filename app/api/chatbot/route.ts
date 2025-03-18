@@ -6,7 +6,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY || '',
 });
 
-
+export const runtime = "edge";
 
 const generateId = () => Math.random().toString(36).slice(2, 15);
 
