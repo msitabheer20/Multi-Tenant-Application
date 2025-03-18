@@ -6,7 +6,7 @@ import { SocketIndicator } from "@/components/socket-indicator";
 interface ChatHeaderProps {
     serverId: string;
     name: string;
-    type: "channel" | "conversation";
+    type: "channel" | "conversation" | "bot";
     imageUrl?: string;
 }
 
@@ -23,6 +23,12 @@ export const ChatHeader = ({
                 <Hash className="w-5 h-5 text-zinc-500 dark:text-zinc-400 mr-2" />
             )}
             {type === "conversation" && (
+                <UserAvatar
+                    src={imageUrl}
+                    className="h-8 w- md:h-8 md:w-8 mr-2"
+                />
+            )}
+            {type === "bot" && (
                 <UserAvatar
                     src={imageUrl}
                     className="h-8 w- md:h-8 md:w-8 mr-2"

@@ -22,12 +22,12 @@ interface ChatMessagesProps {
 	name: string;
 	member: Member;
 	chatId: string;
-	apiUrl: string;
-	socketUrl: string;
+	apiUrl?: string;
+	socketUrl?: string;
 	socketQuery: Record<string, string>;
-	paramKey: "channelId" | "conversationId";
+	paramKey: "channelId" | "conversationId" | "botId";
 	paramValue: string;
-	type: "channel" | "conversation";
+	type: "channel" | "conversation" | "bot";
 }
 
 export const ChatMessages = ({

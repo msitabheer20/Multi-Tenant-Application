@@ -32,6 +32,8 @@ const MemberIdPage = async ({
         }
     })
 
+    console.log("Here is current Member", currentMember);
+
     if (!currentMember) {
         return redirect("/");
     }

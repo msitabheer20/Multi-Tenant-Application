@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ServerSection } from "./server-section";
 import { ServerChannel } from "./server-channel";
 import { ServerMember } from "./server-member";
+import { ServerBot } from "./server-bot";
 
 interface ServerSidebarProps {
 	serverId: string,
@@ -194,7 +195,7 @@ export const ServerSidebar = async ({
 						<div className="space-y-[2px]">
 							{members.map((member) => (
 								<ServerMember
-									key = { member.id }
+									key={member.id}
 									member={member}
 									server={server}
 								/>
@@ -202,6 +203,29 @@ export const ServerSidebar = async ({
 						</div>
 					</div>
 				)}
+
+				<div className="mb-2">
+					<ServerSection sectionType="bots" role={role} label="Talk with Bot" server={server} />
+					<div className="space-y-[2px]">
+						<ServerMember
+							key="bot"
+							member={{
+								id: "bot",
+								profile: {
+									id: "bot-profile",
+									name: "AI Assistant",
+									imageUrl: "https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420",
+									createdAt: new Date(),
+									updatedAt: new Date(),
+									userId: "bot-user",
+									email: "bot@example.com",
+								},
+							}}
+							server={server}
+							isBot={true}
+						/>
+					</div>
+				</div>
 			</ScrollArea>
 		</div>
 	)

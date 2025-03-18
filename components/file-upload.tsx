@@ -18,7 +18,7 @@ export const FileUpload = ({
     value,
     endpoint
 }: FileUploadProps) => {
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [fileUploaded, setFileUploaded] = useState(false);
 
     const fileType = value?.split(".").pop();

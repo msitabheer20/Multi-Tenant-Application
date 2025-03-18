@@ -18,7 +18,6 @@ import {
 	Gavel,
 	Loader2,
 	MoreVertical,
-	RollerCoaster,
 	Shield,
 	ShieldAlert,
 	ShieldCheck,
