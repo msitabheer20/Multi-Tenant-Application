@@ -1,37 +1,40 @@
 "use client"
-// import { ChatHeader } from "@/components/chat/chat-header";
-import { ChatInput } from "@/components/chat/chat-input";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/user-avatar";
 import { useChat } from "@ai-sdk/react";
-import { Plus, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
+import { useEffect, useRef } from "react";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
 	Form,
 	FormControl,
 	FormField,
 	FormItem
 } from "@/components/ui/form";
-import { EmojiPicker } from "@/components/emoji-picker";
-import { useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { BotMessageSquare, Loader2 } from "lucide-react";
 
-interface BotPageProps {
-	params: {
-		serverId: string;
-		botId: string;
-	}
-}
+const formSchema = z.object({
+	content: z.string().min(1)
+});
 
-const BotPage = ({
-	params
-}: BotPageProps) => {
+const BotPage = () => {
 
-	const { messages, input, handleInputChange, handleSubmit, reload, error } = useChat({ api: "/api/openAI" });
+	const { messages, input, handleInputChange, handleSubmit, status, reload, error } = useChat({ api: "/api/openAI" });
 	const scrollRef = useRef<HTMLDivElement>(null);
-	if (error) console.log(error);
+
+	const form = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			content: "",
+		}
+	})
+
+	const isLoading = form.formState.isSubmitting;
 
 	useEffect(() => {
 		if (scrollRef.current) {
@@ -40,7 +43,9 @@ const BotPage = ({
 	}, [messages])
 
 	return (
-		<div className="bg-white dark:bg-[#313338] flex flex-col h-screen p-4">
+		<div className="bg-white dark:bg-[#313338] flex flex-col h-screen">
+
+			{/* Chat Header */}
 			<div className="text-md font-semibold px-3 flex items-center h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
 				<UserAvatar
 					src="https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420"
@@ -51,15 +56,10 @@ const BotPage = ({
 				</p>
 			</div>
 
-			<div className="flex-1 flex flex-col py-4 overflow-y-auto p-4">
+
+			{/* flex flex-col-reverse mt-auto */}
+			<div className="flex-1 flex flex-col py-4 overflow-y-auto p-8">
 				<ScrollArea className="flex flex-col-reverse mt-auto">
-					{
-						messages?.length === 0 && (
-							<div className="w-full mt-32 text-gray-500 items-center justify-center flex gap-3">
-								no messages yet
-							</div>
-						)
-					}
 					{
 						messages?.map((message, index) => (
 							<div
@@ -67,11 +67,20 @@ const BotPage = ({
 								className={`mb-4`}
 							>
 								<div
-									className={`inline-block p-4 rounded-lg ${message.role === "user"
-										? "bg-primary text-primary-foreground"
-										: "bg-muted"
+									className={`inline-block p-2 rounded-sm ${message.role === "user"
+										? "dark:bg-zinc-300 bg-zinc-600 text-primary-foreground"
+										: ""
 										}`}
 								>
+									{
+										message.role === "user" ?
+											<p className="font-semibold text-sm hover:underline cursor-pointer mb-2">YOU</p> :
+											<p
+												className="font-semibold text-sm hover:underline cursor-pointer flex items-center mb-2">
+												BOT
+												<BotMessageSquare className="h-4 w-4 ml-2 text-blue-500" />
+											</p>
+									}
 									<ReactMarkdown
 										children={message.content}
 										remarkPlugins={remarkGfm}
@@ -80,7 +89,7 @@ const BotPage = ({
 												return inline ? (
 													<code {...props} className="bg-gray-200 p-2 rounded">{children}</code>
 												) : (
-													<pre {...props} className="bg-gray-200 px-1 rounded">
+													<pre {...props} className="bg-zinc-500 px-1 rounded">
 														<code>{children}</code>
 													</pre>
 												)
@@ -110,48 +119,44 @@ const BotPage = ({
 							</div>
 						)
 					}
-					<div ref={scrollRef}></div>
+					{/* <div ref={scrollRef}></div> */}
 				</ScrollArea>
-
-				{/*  */}
-				{/* <form
-					onSubmit={handleSubmit}
-					className="flex w-full items-center space-x-2"
-				>
-					<Input
-						value={input}
-						onChange={handleInputChange}
-						className="flex-1"
-						placeholder="Type your messages here..."
-					/>
-					<Button type="submit" className="size-9" size="icon">
-						<Send className="size-4" />
-					</Button>
-				</form> */}
-				<form onSubmit={handleSubmit} className="flex w-full items-center space-x-2 relative p-4">
-
-					{/* Input Field */}
-					<Input
-						value={input}
-						onChange={handleInputChange}
-						className="w-full px-14 py-6 bg-zinc-200/90 dark:bg-zinc-700/75 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-200 rounded-md"
-						placeholder="Type your messages here..."
-					/>
-
-					{/* Emoji Picker on the Right */}
-					{/* <div className="absolute top-7 right-12">
-						<EmojiPicker onChange={(emoji: string) => handleInputChange({ target: { value: `${input} ${emoji}` } })} />
-					</div> */}
-
-					{/* Send Button */}
-					{/* <Button type="submit" className="size-9" size="icon">
-						<Send className="size-4" />
-					</Button> */}
-				</form>
-
-
-				{/*  */}
+				<div ref={scrollRef} />
 			</div>
+
+
+			<Form {...form}>
+				<form onSubmit={handleSubmit}>
+					<FormField
+						control={form.control}
+						name="content"
+						render={({ field }) => (
+							<FormItem>
+								<FormControl>
+									<div className="relative p-4 pb-6">
+										<Input
+											disabled={isLoading}
+											className="px-4 py-6 bg-zinc-200/90 dark:bg-zinc-700/75 border-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-200"
+											value={input}
+											onChange={handleInputChange}
+											placeholder="type your message..."
+										/>
+										<div className="absolute top-3 right-8">
+											{
+												status === "streaming" && (
+													<Loader2 className="h-5 w-5 text-zinc-500 animate-spin my-4" />
+												)
+											}
+										</div>
+									</div>
+								</FormControl>
+							</FormItem>
+						)}
+					>
+
+					</FormField>
+				</form>
+			</Form>
 		</div>
 	)
 }
