@@ -60,66 +60,24 @@ const BotPage = () => {
 			{/* flex flex-col-reverse mt-auto */}
 			<div className="flex-1 flex flex-col py-4 overflow-y-auto p-8">
 				<ScrollArea className="flex flex-col-reverse mt-auto">
-					{
-						messages?.map((message, index) => (
-							<div
-								key={index}
-								className={`mb-4`}
-							>
-								<div
-									className={`inline-block p-2 rounded-sm ${message.role === "user"
-										? "dark:bg-zinc-300 bg-zinc-600 text-primary-foreground"
-										: ""
-										}`}
-								>
-									{
-										message.role === "user" ?
-											<p className="font-semibold text-sm hover:underline cursor-pointer mb-2">YOU</p> :
-											<p
-												className="font-semibold text-sm hover:underline cursor-pointer flex items-center mb-2">
-												BOT
-												<BotMessageSquare className="h-4 w-4 ml-2 text-blue-500" />
-											</p>
-									}
-									<ReactMarkdown
-										children={message.content}
-										remarkPlugins={remarkGfm}
-										components={{
-											code({ node, inline, className, children, ...props }) {
-												return inline ? (
-													<code {...props} className="bg-gray-200 p-2 rounded">{children}</code>
-												) : (
-													<pre {...props} className="bg-zinc-500 px-1 rounded">
-														<code>{children}</code>
-													</pre>
-												)
-											},
-											ul: ({ children }) => (
-												<ul className="list-disc ml-4 space-y-1">
-													{children}
-												</ul>
-											),
-											ol: ({ children }) => (
-												<li className="list-decimal ml-4">{children}</li>
-											)
-										}}
-									/>
-								</div>
-							</div>
-						))
-					}
 
-					{
-						error && (
-							<div className="w-full items-center flex justify-center gap-3">
-								<div>An error occured</div>
-								<button className="underline" type="button" onClick={() => reload()}>
-									Retry
-								</button>
+					{messages.map((message) => (
+						<div
+							key={message.id}
+							className="p-4 pl-0"
+						>
+							<div>
+								<span className="text-xs opacity-70 mt-1 block">
+									{message.role === 'user' ? 'YOU' : 'BOT'}
+								</span>
+								<p className="whitespace-pre-wrap">{message.content}</p>
+								<span className="text-xs opacity-70 mt-1 block">
+									{message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+								</span>
 							</div>
-						)
-					}
-					{/* <div ref={scrollRef}></div> */}
+						</div>
+					))}
+
 				</ScrollArea>
 				<div ref={scrollRef} />
 			</div>
