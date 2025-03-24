@@ -140,7 +140,7 @@ export default async function handler(
 
         return res.status(200).json(directMessage);
     } catch (error) {
-        console.log("[MESSAGE_ID]", error);
+        // console.log("[MESSAGE_ID]", error);
         return res.status(500).json({ error: "Internal Error" });
     }
 }
