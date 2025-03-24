@@ -20,23 +20,6 @@ const openai = new OpenAI({
 });
 
 // Function to split text into chunks
-function splitIntoChunks(text: string, maxChunkSize: number = 8000): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-  const chunks: string[] = [];
-  let currentChunk = '';
-
-  for (const sentence of sentences) {
-    if ((currentChunk + sentence).length > maxChunkSize) {
-      if (currentChunk) chunks.push(currentChunk.trim());
-      currentChunk = sentence;
-    } else {
-      currentChunk += ' ' + sentence;
-    }
-  }
-
-  if (currentChunk) chunks.push(currentChunk.trim());
-  return chunks;
-}
 
 export async function POST(req: Request) {
   try {

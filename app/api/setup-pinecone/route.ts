@@ -64,7 +64,7 @@ export async function POST() {
       throw new Error(`Failed to create index: ${createError.message || 'Unknown error'}`);
     }
   } catch (error: any) {
-    console.error('Error setting up Pinecone:', error);
+    // console.error('Error setting up Pinecone:', error);
     return NextResponse.json(
       { 
         error: 'Failed to setup Pinecone index',

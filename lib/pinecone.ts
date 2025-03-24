@@ -72,8 +72,8 @@ export async function upsertDocument(fileId: string, content: string) {
     // Split the content into chunks
     console.log('\nSplitting content into chunks...');
     const docs = await textSplitter.createDocuments([content]);
-    console.log('Number of chunks created:', docs.length);
-    console.log('First chunk preview:', docs[0]?.pageContent.substring(0, 200) + '...');
+    // console.log('Number of chunks created:', docs.length);
+    // console.log('First chunk preview:', docs[0]?.pageContent.substring(0, 200) + '...');
     
     // Create embeddings for each chunk
     console.log('\nCreating embeddings for chunks...');

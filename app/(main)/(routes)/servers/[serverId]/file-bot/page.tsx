@@ -37,7 +37,7 @@ declare global {
 }
 
 const FileBotPage = () => {
-	const { onOpen } = useModal();
+
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState('');
 	const [files, setFiles] = useState<FileData[]>([]);
@@ -337,10 +337,6 @@ const FileBotPage = () => {
 		}
 	};
 
-	// const apiUrl = "api/socket/messages"
-	// const query = {
-	//   id: "1234"
-	// }
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
