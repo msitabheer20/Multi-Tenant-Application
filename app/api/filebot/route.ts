@@ -112,12 +112,12 @@ export async function POST(req: Request) {
 
     // Get response from OpenAI
     const completion = await openai.chat.completions.create({
-      model: 'chatgpt-4o-latest',
+      model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message },
       ],
-      temperature: 0.7,
+      temperature: 0.3,
       max_tokens: 500,
     });
 

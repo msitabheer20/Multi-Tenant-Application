@@ -88,13 +88,15 @@ export async function upsertDocument(fileId: string, content: string) {
       docs.map(async (doc: Document, i: number) => {
         console.log(`Creating embedding for chunk ${i + 1}/${docs.length}`);
         const embedding = await embeddings.embedQuery(doc.pageContent);
+        const vectorId = `${fileId}-${i}`;
         return {
-          id: `${fileId}-${i}`,
+          id: vectorId,
           values: embedding,
           metadata: {
             text: doc.pageContent,
-            fileId,
+            fileId: fileId,
             chunkIndex: i,
+            totalChunks: docs.length,
           },
         };
       })
@@ -224,7 +226,7 @@ export async function queryPinecone(query: string, fileId: string, topK: number 
     // Query Pinecone
     const queryResponse = await index.query({
       vector: queryEmbedding,
-      topK,
+      topK: Math.max(topK * 2, 10),
       filter: {
         fileId: { $eq: fileId },
       },
@@ -234,26 +236,52 @@ export async function queryPinecone(query: string, fileId: string, topK: number 
     // console.log('\n=== Pinecone Query Results ===');
     // console.log('Total matches found:', queryResponse.matches?.length || 0);
     
-    if (queryResponse.matches && queryResponse.matches.length > 0) {
-      console.log('\nMatch Details:');
-      queryResponse.matches.forEach((match, index) => {
-        console.log(`\nMatch ${index + 1}:`);
-        console.log('Score:', match.score);
-        console.log('Text Preview:', match.metadata?.text?.substring(0, 200) + '...');
-        console.log('Chunk Index:', match.metadata?.chunkIndex);
+    // if (queryResponse.matches && queryResponse.matches.length > 0) {
+    //   console.log('\nMatch Details:');
+    //   queryResponse.matches.forEach((match, index) => {
+    //     console.log(`\nMatch ${index + 1}:`);
+    //     console.log('Score:', match.score);
+    //     console.log('Text Preview:', match.metadata?.text?.substring(0, 200) + '...');
+    //     console.log('Chunk Index:', match.metadata?.chunkIndex);
+    //   });
+    // } else {
+    //   console.log('No matches found in Pinecone');
+    // }
+    let matches = queryResponse.matches || [];
+    
+    // If no matches found with fileId filter, try without it
+    if (matches.length === 0) {
+      console.log('\nNo matches found with fileId filter, trying without filter...');
+      const unfilteredResponse = await index.query({
+        vector: queryEmbedding,
+        topK: Math.max(topK * 2, 10),
+        includeMetadata: true,
       });
-    } else {
-      console.log('No matches found in Pinecone');
+      
+      console.log('Total matches found without filter:', unfilteredResponse.matches?.length || 0);
+      matches = unfilteredResponse.matches || [];
+      
+      // Log all matches to help debug
+      if (matches.length > 0) {
+        console.log('\nAll matches found:');
+        matches.forEach((match, index) => {
+          console.log(`\nMatch ${index + 1}:`);
+          console.log('ID:', match.id);
+          console.log('Score:', match.score);
+          console.log('FileId in metadata:', match.metadata?.fileId);
+          console.log('Chunk Index:', match.metadata?.chunkIndex);
+        });
+      }
     }
 
-    const chunks = queryResponse.matches
-      ?.filter(match => match.score && match.score > 0.3)
+    const chunks = matches
+      .filter(match => match.score && match.score > 0.3)
       .map((match: any) => match.metadata?.text) || [];
 
       if (chunks.length === 0) {
         // console.log('\nNo relevant chunks found with score > 0.3');
         // Try a more lenient search without score filtering
-        const lenientChunks = queryResponse.matches?.map((match: any) => match.metadata?.text) || [];
+        const lenientChunks = matches.map((match: any) => match.metadata?.text) || [];
         console.log('All chunks found (without score filtering):', {
           numChunks: lenientChunks.length,
           totalLength: lenientChunks.reduce((acc, chunk) => acc + chunk.length, 0)

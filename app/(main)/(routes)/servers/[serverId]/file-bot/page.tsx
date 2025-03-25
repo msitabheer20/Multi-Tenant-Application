@@ -17,7 +17,7 @@ import {
 import { useForm } from "react-hook-form";
 import { BotMessageSquare, Loader2, Plus } from "lucide-react";
 import { useModal } from "@/hooks/use-modal-store";
-import Script from "next/script";
+// import Script from "next/script";
 
 export interface Message {
 	id: string;
@@ -45,6 +45,7 @@ const FileBotPage = () => {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [processingStatus, setProcessingStatus] = useState<string>('');
 	const chatContainerRef = useRef<HTMLDivElement>(null);
+	const [isPdfLibLoading, setIsPdfLibLoading] = useState(true);
 	const [isPdfLibLoaded, setIsPdfLibLoaded] = useState(false);
 	const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -137,8 +138,18 @@ const FileBotPage = () => {
 				setFiles(prev => [...prev, fileData]);
 
 				if (file.type === 'application/pdf') {
+
+					let attempts = 0;
+					const maxAttempts = 10;
+					while (!isPdfLibLoaded && attempts < maxAttempts) {
+						await new Promise(resolve => setTimeout(resolve, 500));
+						attempts++;
+						console.log(`Waiting for PDF.js to load... Attempt ${attempts}/${maxAttempts}`);
+					}
+
+
 					if (!isPdfLibLoaded) {
-						throw new Error('PDF.js library is still loading. Please try again in a moment.');
+						throw new Error('Please refresh the page and try again.');
 					}
 					const content = await processPdfFile(file);
 					if (!content.trim()) {
@@ -213,7 +224,7 @@ const FileBotPage = () => {
 				{
 					id: Date.now().toString(),
 					role: 'system',
-					content: 'Error uploading file. Please try again.',
+					content: `Error uploading file: ${error instanceof Error ? error.message : 'Unknown error'}`,
 					timestamp: Date.now(),
 				},
 			]);
@@ -379,15 +390,59 @@ const FileBotPage = () => {
 		setupPinecone();
 	}, []);
 
+	useEffect(() => {
+		const initPdfJs = async () => {
+			try {
+				setIsPdfLibLoading(true);
+				// Load PDF.js script
+				const script = document.createElement('script');
+				script.src = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+				script.async = true;
+
+				script.onload = () => {
+					// Set up the worker
+					window.pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+					setIsPdfLibLoaded(true);
+					setIsPdfLibLoading(false);
+					console.log('PDF.js library loaded successfully');
+				};
+
+				script.onerror = (error) => {
+					console.error('Error loading PDF.js:', error);
+					setIsPdfLibLoading(false);
+					setMessages(prev => [...prev, {
+						id: Date.now().toString(),
+						role: 'system',
+						content: 'Error loading PDF.js library. Please refresh the page.',
+						timestamp: Date.now(),
+					}]);
+				};
+
+				document.head.appendChild(script);
+			} catch (error) {
+				console.error('Error initializing PDF.js:', error);
+				setIsPdfLibLoading(false);
+				setMessages(prev => [...prev, {
+					id: Date.now().toString(),
+					role: 'system',
+					content: 'Error initializing PDF.js library. Please refresh the page.',
+					timestamp: Date.now(),
+				}]);
+			}
+		};
+
+		initPdfJs();
+	}, []);
+
 	return (
 		<div className="bg-white dark:bg-[#313338] flex flex-col h-screen">
-			<Script
+			{/* <Script
 				src="//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
 				onLoad={() => {
 					window.pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 					setIsPdfLibLoaded(true);
 				}}
-			/>
+			/> */}
 			{/* Chat Header */}
 			<div className="text-md font-semibold px-3 flex items-center h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
 				<UserAvatar
@@ -405,7 +460,14 @@ const FileBotPage = () => {
 
 					{messages.length === 0 && (
 						<div className="text-center text-gray-500">
-							Click the plus icon to upload a document and ask questions about its content.
+							{isPdfLibLoading ? (
+								<div className="flex items-center justify-center space-x-2">
+									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+									<span>Loading PDF support...</span>
+								</div>
+							) : (
+								'Click the plus icon to upload a document and ask questions about its content.'
+							)}
 						</div>
 					)}
 
@@ -445,6 +507,7 @@ const FileBotPage = () => {
 											onClick={() => setIsUploadModalOpen(true)}
 											className="absolute top-7 left-8 h-[24px] w-[24px] bg-zinc-500 dark:bg-zinc-400 hover:bg-zinc-600 dark:hover:bg-zinc-300 transition rounded-full p-1 flex items-center justify-center"
 											title="Upload files"
+											disabled={isPdfLibLoading}
 										>
 											<Plus className="h-5 w-5" />
 										</button>
