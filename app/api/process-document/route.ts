@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { upsertDocument } from '@/lib/pinecone';
+import { pinecone } from '@/lib/pinecone';
 
 export async function POST(req: Request) {
   try {
@@ -23,6 +24,17 @@ export async function POST(req: Request) {
     // Process and store the document in Pinecone
     // console.log('\nStarting document processing...');
     const numChunks = await upsertDocument(fileId, content);
+    const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
+    // const stats = await index.describeIndexStats();
+
+    // const queryResponse = await index.query({
+    //   vector: new Array(1536).fill(0), // Zero vector to get all matches
+    //   topK: 1,
+    //   filter: {
+    //     fileId: { $eq: fileId },
+    //   },
+    //   includeMetadata: true,
+    // });
 
     // console.log('\n=== Document Processing Complete ===');
     // console.log('Document processed successfully:', {

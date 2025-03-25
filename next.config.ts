@@ -14,7 +14,8 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       "hslc2pahn6.ufs.sh",
-      "uploadthing.com"
+      "uploadthing.com",
+      "utfs.io"
     ]
   },
   devIndicators: false
