@@ -10,7 +10,10 @@ export async function DELETE(
         const profile = await currentProfile();
 
         if (!profile) {
-            return new NextResponse("Unauthorized", {status: 401})
+            return NextResponse.json(
+                { success: false, error: "Unauthorized" },
+                { status: 401 }
+            );
         }
 
         const server = await db.server.delete({
@@ -20,10 +23,19 @@ export async function DELETE(
             },
         });
 
-        return NextResponse.json(server);
+        return NextResponse.json({
+            success: true,
+            server: {
+                id: server.id,
+                name: server.name
+            }
+        });
     } catch (error) {
-        // console.log("[SERVER_ID_DELETE]", error);
-        return new NextResponse("Internal Error", {status : 500});
+        console.error("[SERVER_ID_DELETE]", error);
+        return NextResponse.json(
+            { success: false, error: "Failed to delete server" },
+            { status: 500 }
+        );
     }
 }
 
@@ -37,7 +49,10 @@ export async function PATCH(
         const { name, imageUrl } = await req.json();
 
         if (!profile) {
-            return new NextResponse("Unauthorized", {status: 401})
+            return NextResponse.json(
+                { success: false, error: "Unauthorized" },
+                { status: 401 }
+            );
         }
 
         const server = await db.server.update({
@@ -51,9 +66,19 @@ export async function PATCH(
             }
         });
 
-        return NextResponse.json(server);
+        return NextResponse.json({
+            success: true,
+            server: {
+                id: server.id,
+                name: server.name,
+                imageUrl: server.imageUrl
+            }
+        });
     } catch (error) {
-        // console.log("[SERVER_ID_PATCH]", error);
-        return new NextResponse("Internal Error", {status : 500});
+        console.error("[SERVER_ID_PATCH]", error);
+        return NextResponse.json(
+            { success: false, error: "Failed to update server" },
+            { status: 500 }
+        );
     }
 }

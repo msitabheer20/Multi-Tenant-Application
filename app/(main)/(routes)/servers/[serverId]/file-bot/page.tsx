@@ -540,6 +540,7 @@ const FileBotPage = () => {
 				files={files}
 				onFileUpload={handleFileUpload}
 				onFileRemove={handleRemoveFile}
+				isPdfLibLoading={isPdfLibLoading}
 			/>
 		</div>
 	)
