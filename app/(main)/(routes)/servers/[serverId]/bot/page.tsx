@@ -6,11 +6,12 @@ import { UserAvatar } from "@/components/user-avatar";
 import { useChat } from '@ai-sdk/react'
 import { useTheme } from "next-themes";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BotMessageSquare, Loader2, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from 'next/navigation'
 
 import {
 	Form,
@@ -20,6 +21,11 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 
+interface BotPageProps {
+	params: Promise<{
+		serverId: string;
+	}>
+}
 
 const formSchema = z.object({
 	content: z.string().min(1)
@@ -33,13 +39,15 @@ export interface Message {
 }
 
 
-const BotPage = () => {
+const BotPage = ({ params }: BotPageProps) => {
+	const resolvedParams = use(params);
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { setTheme } = useTheme();
 	const [themeChanging, setThemeChanging] = useState(false);
+	const router = useRouter();
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -114,7 +122,146 @@ const BotPage = () => {
 				timestamp: Date.now() + 1,
 			  },
 			]);
-		  } else {
+		  } 
+		  else if (data.functionCall && data.functionCall.name === 'createServer') {
+			// Handle server creation function
+			const { name, imageUrl } = data.functionCall.arguments;
+			
+			try {
+				const response = await fetch('/api/servers/create', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ name, imageUrl }),
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to create server');
+				}
+
+				const result = await response.json();
+				
+				if (result.success) {
+					toast.success(`Server created successfully: ${name}`);
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: data.content,
+							timestamp: Date.now(),
+						},
+						{
+							id: (Date.now() + 1).toString(),
+							role: 'system',
+							content: `Server created with name: ${name} and invite code: ${result.server?.inviteCode}`,
+							timestamp: Date.now() + 1,
+						},
+					]);
+					router.refresh();
+				} else {
+					throw new Error(result.error || 'Failed to create server');
+				}
+			} catch (error) {
+				console.error('Server creation error:', error);
+				toast.error('Failed to create server');
+				throw error;
+			}
+		  }
+
+		  else if(data.functionCall && data.functionCall.name === 'deleteServer') {
+			try {
+				const response = await fetch(`/api/servers/${resolvedParams.serverId}`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+
+				const result = await response.json();
+
+				if (!response.ok) {
+					throw new Error(result.error || 'Failed to delete server');
+				}
+
+				if (result.success) {
+					toast.success(`Server deleted successfully`);
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: data.content,
+							timestamp: Date.now(),
+						},
+						{
+							id: (Date.now() + 1).toString(),
+							role: 'system',
+							content: `Server deleted successfully`,
+							timestamp: Date.now() + 1,
+						},
+					]);
+					router.refresh();
+				} else {
+					throw new Error(result.error || 'Failed to delete server');
+				}
+			} catch (error) {
+				console.error('Server deletion error:', error);
+				toast.error(error instanceof Error ? error.message : 'Failed to delete server');
+				throw error;
+			}
+		  }
+
+		  else if(data.functionCall && data.functionCall.name === 'updateServer') {
+
+			try {
+				const response = await fetch(`/api/servers/${resolvedParams.serverId}`, {
+					method: 'PATCH',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ 
+						name: data.functionCall.arguments.name, 
+						imageUrl: data.functionCall.arguments.imageUrl 
+					}),
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to update server');
+				}
+
+				const result = await response.json();
+
+				if (result.success) {
+					toast.success(`Server updated successfully`);
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: data.content,
+							timestamp: Date.now(),
+						},
+						{
+							id: (Date.now() + 1).toString(),
+							role: 'system',
+							content: `Server updated successfully`,
+							timestamp: Date.now() + 1,
+						},
+					]);
+					router.refresh();
+				} else {
+					throw new Error(result.error || 'Failed to update server');
+				}
+			} catch (error) {
+				console.error('Server update error:', error);
+				toast.error('Failed to update server');
+				throw error;
+			}
+		  }
+
+		  else {
 			// Normal message
 			setMessages(prev => [
 			  ...prev,
