@@ -261,6 +261,51 @@ const BotPage = ({ params }: BotPageProps) => {
 			}
 		  }
 
+		  else if(data.functionCall && data.functionCall.name === 'getMembers') {
+			try {
+				const response = await fetch(`/api/servers/${resolvedParams.serverId}`, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to get members');
+				}
+
+				const result = await response.json();
+
+				if (result.success) {
+					const membersList = result.server.members.map((member: any) => 
+						`- ${member.profile.name} (${member.role})`
+					).join('\n');
+
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: data.content,
+							timestamp: Date.now(),
+						},
+						{
+							id: (Date.now() + 1).toString(),
+							role: 'system',
+							content: `Server Members:\n${membersList}`,
+							timestamp: Date.now() + 1,
+						},
+					]);
+				} else {
+					throw new Error(result.error || 'Failed to get members');
+				}
+			} catch (error) {
+				console.error('Get members error:', error);
+				toast.error('Failed to get members');
+				throw error;
+			}
+		  }
+
 		  else {
 			// Normal message
 			setMessages(prev => [

@@ -113,3 +113,57 @@ export async function updateServer(serverId: string, name: string, imageUrl: str
         };
     }
 }
+
+export async function getMembers(serverId: string) {
+    try {
+        const profile = await currentProfile();
+        
+        if (!profile) {
+            throw new Error("Unauthorized");
+        }
+
+        const server = await db.server.findUnique({
+            where: {
+                id: serverId,
+            },
+            include: {
+                members: {
+                    include: {
+                        profile: true
+                    },
+                    orderBy: {
+                        role: "asc"
+                    }
+                }
+            }
+        });
+
+        if (!server) {
+            throw new Error("Server not found");
+        }
+
+        return {
+            success: true,
+            server: {
+                id: server.id,
+                name: server.name,
+                members: server.members.map(member => ({
+                    id: member.id,
+                    role: member.role,
+                    profile: {
+                        id: member.profile.id,
+                        name: member.profile.name,
+                        email: member.profile.email,
+                        imageUrl: member.profile.imageUrl
+                    }
+                }))
+            }
+        };
+    } catch (error) {
+        console.error("[GET_MEMBERS]", error);
+        return {
+            success: false,
+            error: "Failed to get members"
+        };
+    }
+}
