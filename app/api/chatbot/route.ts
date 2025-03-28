@@ -78,6 +78,20 @@ const availableFunctions = {
 			},
 		},
 	},
+
+	getChannels: {
+		name: "getChannels",
+		description: "Get or fetch or show all channels in the server",
+		parameters: {
+			type: "object",
+			properties: {
+				serverId: {
+					type: "string",
+					description: "The id of the server to get the channels",
+				},
+			},
+		},
+	},
 };
 
 export async function POST(req: Request) {
@@ -104,7 +118,9 @@ export async function POST(req: Request) {
 
     You also have the ability to delete or remove a server. If the user asks to delete or remove a server, use the deleteServer function
 
-	you also have the ability to get information about the members in the server. If the user asks to get members in the server, use the getMembers function to fetch the information.
+	you also have the ability to get information about the members in the server. If the user asks to get members in the server or get members or show members, use the getMembers function to fetch the information.
+
+	you also have the ability to get information about the channels in the server. If the user asks to get channels in the server or get channels or show channels, use the getChannels function to fetch the information.
 
     You can only use one function at a time.
     `;
@@ -137,6 +153,10 @@ export async function POST(req: Request) {
 				{
 					type: "function",
 					function: availableFunctions.getMembers,
+				},
+				{
+					type: "function",
+					function: availableFunctions.getChannels,
 				},
 			],
 			tool_choice: "auto",
@@ -219,6 +239,20 @@ export async function POST(req: Request) {
 						content: responseMessage.content || "I'll get the members for you.",
 						functionCall: {
 							name: 'getMembers',
+							arguments: { serverId },
+						}
+					});
+				}
+
+				else if (toolCall.type === 'function' && toolCall.function.name === 'getChannels') {
+					const functionArgs = JSON.parse(toolCall.function.arguments);
+					const serverId = functionArgs.serverId;
+
+					console.log(`Function call: getChannels/ Return with function call information`)
+					return NextResponse.json({
+						content: responseMessage.content || "I'll get the channels for you.",
+						functionCall: {
+							name: 'getChannels',
 							arguments: { serverId },
 						}
 					});

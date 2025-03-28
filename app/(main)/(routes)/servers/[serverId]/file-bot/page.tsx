@@ -3,10 +3,10 @@
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/user-avatar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import FileUploadModal from '@/components/chat/chat-file-upload';
+import FileUploadModal, { FileData } from '@/components/chat/chat-file-upload';
 
 import {
 	Form,
@@ -17,6 +17,7 @@ import {
 import { useForm } from "react-hook-form";
 import { BotMessageSquare, Loader2, Plus } from "lucide-react";
 import { useModal } from "@/hooks/use-modal-store";
+import { toast } from "sonner";
 // import Script from "next/script";
 
 export interface Message {
@@ -24,6 +25,12 @@ export interface Message {
 	role: 'user' | 'assistant' | 'system';
 	content: string;
 	timestamp: number;
+}
+
+interface FileBotPageProps {
+	params: Promise<{
+		serverId: string;
+	}>
 }
 
 const formSchema = z.object({
@@ -36,9 +43,15 @@ declare global {
 	}
 }
 
-const FileBotPage = () => {
+const FileBotPage = ({ params }: FileBotPageProps) => {
 
-	const [messages, setMessages] = useState<Message[]>([]);
+	const resolvedParams = use(params);
+	const [messages, setMessages] = useState<Message[]>(() => {
+		if (typeof window !== 'undefined') {
+			const savedMessages = localStorage.getItem(`file-bot-chat-messages-${resolvedParams.serverId}`)
+			return savedMessages ? JSON.parse(savedMessages) : [];
+		}
+	});
 	const [input, setInput] = useState('');
 	const [files, setFiles] = useState<FileData[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -355,13 +368,17 @@ const FileBotPage = () => {
 		}
 	})
 
-	//  const isLoading = form.formState.isSubmitting;
-
 	useEffect(() => {
 		if (scrollRef.current) {
 			scrollRef.current.scrollIntoView({ behavior: "smooth" })
 		}
 	}, [messages])
+
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(`file-bot-chat-messages-${resolvedParams.serverId}`, JSON.stringify(messages));
+		}
+	}, [messages, resolvedParams.serverId])
 
 	useEffect(() => {
 		// Setup Pinecone index when component mounts
@@ -436,22 +453,29 @@ const FileBotPage = () => {
 
 	return (
 		<div className="bg-white dark:bg-[#313338] flex flex-col h-screen">
-			{/* <Script
-				src="//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-				onLoad={() => {
-					window.pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-					setIsPdfLibLoaded(true);
-				}}
-			/> */}
-			{/* Chat Header */}
-			<div className="text-md font-semibold px-3 flex items-center h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
-				<UserAvatar
-					src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9FjyaXXzava7DyGX2cWojowsjmxiD_tOxqg&s"
-					className="h-8 w- md:h-8 md:w-8 mr-2"
-				/>
-				<p className="font-semibold text-md text-black dark:text-white">
-					File Assistant
-				</p>
+
+			<div className="text-md font-semibold px-3 flex items-center justify-between h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
+				<div 
+					className="flex items-center"
+				>
+					<UserAvatar
+						src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9FjyaXXzava7DyGX2cWojowsjmxiD_tOxqg&s"
+						className="h-8 w- md:h-8 md:w-8 mr-2"
+					/>
+					<p className="font-semibold text-md text-black dark:text-white">
+						File Assistant
+					</p>
+				</div>
+				<button
+					onClick={() => {
+						localStorage.removeItem(`file-bot-chat-messages-${resolvedParams.serverId}`);
+						setMessages([]);
+						toast.success("Chat history cleared");
+					}}
+					className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+				>
+					Clear History
+				</button>
 			</div>
 
 

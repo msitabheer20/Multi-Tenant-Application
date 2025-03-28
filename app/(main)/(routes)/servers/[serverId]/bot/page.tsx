@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, use } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BotMessageSquare, Loader2, Moon, Sun } from "lucide-react";
+import { BotMessageSquare, Loader2, Moon, Sun, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation'
 
@@ -38,12 +38,25 @@ export interface Message {
 
 const BotPage = ({ params }: BotPageProps) => {
 	const resolvedParams = use(params);
-	const [messages, setMessages] = useState<Message[]>([]);
+	const [messages, setMessages] = useState<Message[]>(() => {
+		// Load messages from localStorage on initial render
+		if (typeof window !== 'undefined') {
+			const savedMessages = localStorage.getItem(`bot-chat-messages-${resolvedParams.serverId}`);
+			return savedMessages ? JSON.parse(savedMessages) : [];
+		}
+		return [];
+	});
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { setTheme } = useTheme();
 	const router = useRouter();
+
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(`bot-chat-messages-${resolvedParams.serverId}`, JSON.stringify(messages));
+		}
+	}, [messages, resolvedParams.serverId]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -270,14 +283,20 @@ const BotPage = ({ params }: BotPageProps) => {
 				}
 
 				const result = await response.json();
-
-				console.log("HELLO", result.server);
+				console.log("HELLO MEMBERS", result);
 
 				if (result.success && result.server) {
 					toast.success(`Members fetched successfully`);
 					const membersList = result.server.members.map((member: any) => 
-						`- ${member.profile.name} (${member.role})`
-					).join('\n');
+						`<div class="flex items-center gap-2">
+							<span class="text-zinc-500">-</span>
+							<span class="text-indigo-500 font-bold">${member.profile.name}</span>
+							<span class="text-zinc-500">(</span>
+							<span class="font-semibold">${member.role}</span>
+							<span class="text-zinc-500">)</span>
+							<button onclick="window.location.href='/servers/${resolvedParams.serverId}/conversations/${member.id}'" class="text-white bg-indigo-500 hover:font-bold hover:bg-indigo-600 px-3 py-1 rounded-md font-sm transition-colors flex items-center gap-1">Message<i class="fas fa-paper-plane"></i></button>
+						</div>`
+					).join('');
 
 					setMessages(prev => [
 						...prev,
@@ -290,7 +309,7 @@ const BotPage = ({ params }: BotPageProps) => {
 						{
 							id: (Date.now() + 1).toString(),
 							role: 'system',
-							content: `Server Members:\n${membersList}`,
+							content: `<div class="space-y-2">${membersList}</div>`,
 							timestamp: Date.now() + 1,
 						},
 					]);
@@ -303,6 +322,51 @@ const BotPage = ({ params }: BotPageProps) => {
 				throw error;
 			}
 		  }
+
+		  else if(data.functionCall && data.functionCall.name === 'getChannels') {
+			try {
+				const response = await fetch(`/api/servers/${resolvedParams.serverId}/channels`, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to get channels');
+				}
+
+				const result = await response.json();
+
+				console.log("HELLO CHANNELS", result);
+
+				if (result) {
+					toast.success(`Channels fetched successfully`);
+					const channelsList = result.map((channel: any) => 
+						`<div class="flex items-center gap-2">
+							<span class="text-zinc-500">-</span>
+							<span class="font-semibold text-indigo-500">${channel.name}</span>
+							<span class="font-semibold">(${channel.type} channel)</span>
+							<button onclick="window.location.href='/servers/${resolvedParams.serverId}/channels/${channel.id}'" class="text-white bg-emerald-500 hover:font-bold hover:bg-emerald-600 px-3 py-1 rounded-md font-sm transition-colors flex items-center gap-1">Message<i class="fas fa-paper-plane"></i></button>
+						</div>`
+					).join('');
+
+					setMessages((current) => [...current, {
+						id: Date.now().toString(),
+						content: `<div class="space-y-2">${channelsList}</div>`,
+						role: "assistant",
+						timestamp: Date.now(),
+					}]);
+				} else {
+					throw new Error(result.error || 'Failed to get channels');
+				}
+			} catch (error) {
+				console.error('Get channels error:', error);
+				toast.error('Failed to get channels');
+				throw error;
+			}
+		  }
+		  
 
 		  else {
 			// Normal message
@@ -347,14 +411,26 @@ const BotPage = ({ params }: BotPageProps) => {
 
 		<div className="bg-white dark:bg-[#313338] flex flex-col h-screen">
 			{/* Chat Header */}
-			<div className="text-md font-semibold px-3 flex items-center h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
-				<UserAvatar
-					src="https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420"
-					className="h-8 w- md:h-8 md:w-8 mr-2"
-				/>
-				<p className="font-semibold text-md text-black dark:text-white">
-				AI Assistant
-				</p>
+			<div className="text-md font-semibold px-3 flex items-center justify-between h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
+				<div className="flex items-center">
+					<UserAvatar
+						src="https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420"
+						className="h-8 w- md:h-8 md:w-8 mr-2"
+					/>
+					<p className="font-semibold text-md text-black dark:text-white">
+						AI Assistant
+					</p>
+				</div>
+				<button 
+					onClick={() => {
+						localStorage.removeItem(`bot-chat-messages-${resolvedParams.serverId}`);
+						setMessages([]);
+						toast.success('Chat history cleared');
+					}}
+					className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+				>
+					Clear History
+				</button>
 			</div>
 
 
@@ -370,7 +446,10 @@ const BotPage = ({ params }: BotPageProps) => {
 								<span className="text-xs opacity-70 mt-1 block">
 									{message.role === 'user' ? 'YOU' : 'BOT'}
 								</span>
-								<p className="whitespace-pre-wrap">{message.content}</p>
+								<p 
+									className="whitespace-pre-wrap"
+									dangerouslySetInnerHTML={{ __html: message.content }}
+								/>
 								<span className="text-xs opacity-70 mt-1 block">
 									{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 								</span>

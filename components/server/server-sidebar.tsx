@@ -249,6 +249,29 @@ export const ServerSidebar = async ({
 						/>
 					</div>
 				</div>
+
+				<div className="mb-2">
+					<ServerSection sectionType="bots" role={role} label="Ask Help" server={server} />
+					<div className="space-y-[2px]">
+						<ServerMember
+							key="bot"
+							member={{
+								id: "bot",
+								profile: {
+									id: "bot-profile",
+									name: "Slack Assistant",
+									imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9IyV_DW-z2jGVxjscYWM0vM3X68UgOOu4yA&s",
+									createdAt: new Date(),
+									updatedAt: new Date(),
+									userId: "bot-user",
+									email: "bot@example.com",
+								},
+							}}
+							server={server}
+							isSlackBot={true}
+						/>
+					</div>
+				</div>
 			</ScrollArea>
 		</div>
 	)

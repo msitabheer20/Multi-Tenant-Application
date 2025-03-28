@@ -10,6 +10,7 @@ interface ServerMemberProps {
     member: Member & { profile: Profile };
     server: Server
     isBot?: boolean;
+    isSlackBot?: boolean;
 }
 
 const roleIconMap = {
@@ -21,7 +22,8 @@ const roleIconMap = {
 export const ServerMember = ({
     member,
     server,
-    isBot = false
+    isBot = false,
+    isSlackBot = false
 }: ServerMemberProps) => {
 
     const params = useParams();
@@ -36,7 +38,11 @@ export const ServerMember = ({
     const onClick = () => {
         if (isBot) {
             router.push(`/servers/${params?.serverId}/bot`);
-        } else {
+        }
+        else if (isSlackBot) {
+            router.push(`/servers/${params?.serverId}/slack-bot`);
+        }
+        else {
             router.push(`/servers/${params?.serverId}/conversations/${member.id}`);
         }
     }
