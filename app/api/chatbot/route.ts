@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { createServer } from './functions';
 
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -65,6 +64,20 @@ const availableFunctions = {
 		name: "deleteServer",
 		description: "Delete the server if delete keyword and server keyword is used",
 	},
+
+	getMembers: {
+		name: "getMembers",
+		description: "Get or fetch or show the members of the server",
+		parameters: {
+			type: "object",
+			properties: {
+				serverId: {
+					type: "string",
+					description: "The id of the server to get the members",
+				},
+			},
+		},
+	},
 };
 
 export async function POST(req: Request) {
@@ -90,6 +103,8 @@ export async function POST(req: Request) {
     You also have the ability to update or change the name and image of a server. If the user asks to update or change the name and image of a server, use the updateServer function using the name and image url provided by the user.
 
     You also have the ability to delete or remove a server. If the user asks to delete or remove a server, use the deleteServer function
+
+	you also have the ability to get information about the members in the server. If the user asks to get members in the server, use the getMembers function to fetch the information.
 
     You can only use one function at a time.
     `;
@@ -118,6 +133,10 @@ export async function POST(req: Request) {
 				{
 					type: "function",
 					function: availableFunctions.deleteServer,
+				},
+				{
+					type: "function",
+					function: availableFunctions.getMembers,
 				},
 			],
 			tool_choice: "auto",
@@ -171,7 +190,6 @@ export async function POST(req: Request) {
 
 					console.log(`Function call: updateServer(${name}, ${imageUrl})`);
 
-					// Return with function call information
 					return NextResponse.json({
 						content: responseMessage.content || "I'll update the server for you.",
 						functionCall: {
@@ -188,6 +206,20 @@ export async function POST(req: Request) {
 						content: responseMessage.content || "I'll delete the server for you.",
 						functionCall: {
 							name: 'deleteServer',
+						}
+					});
+				}
+
+				else if (toolCall.type === 'function' && toolCall.function.name === 'getMembers') {
+					const functionArgs = JSON.parse(toolCall.function.arguments);
+					const serverId = functionArgs.serverId;
+
+					console.log(`Function call: getMembers/ Return with function call information`)
+					return NextResponse.json({
+						content: responseMessage.content || "I'll get the members for you.",
+						functionCall: {
+							name: 'getMembers',
+							arguments: { serverId },
 						}
 					});
 				}

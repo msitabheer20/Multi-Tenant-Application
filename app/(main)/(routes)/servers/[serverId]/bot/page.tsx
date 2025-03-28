@@ -2,10 +2,7 @@
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/user-avatar";
-// import { useChat } from "@vercel/ai/react";
-import { useChat } from '@ai-sdk/react'
 import { useTheme } from "next-themes";
-import { useParams } from "next/navigation";
 import { useEffect, useRef, useState, use } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,7 +43,6 @@ const BotPage = ({ params }: BotPageProps) => {
 	const [isLoading, setIsLoading] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { setTheme } = useTheme();
-	const [themeChanging, setThemeChanging] = useState(false);
 	const router = useRouter();
 
 	const form = useForm<z.infer<typeof formSchema>>({
@@ -99,9 +95,8 @@ const BotPage = ({ params }: BotPageProps) => {
 		  const data = await response.json();
 		  console.log('Success response data:', data);
 		  
-		  // Check if the response includes a function call
 		  if (data.functionCall && data.functionCall.name === 'setTheme') {
-			// Handle theme change function
+
 			const { theme: newTheme } = data.functionCall.arguments;
 			setTheme(newTheme);
 			toast.success(`Theme changed to ${newTheme} mode`);
@@ -155,7 +150,7 @@ const BotPage = ({ params }: BotPageProps) => {
 						{
 							id: (Date.now() + 1).toString(),
 							role: 'system',
-							content: `Server created with name: ${name} and invite code: ${result.server?.inviteCode}`,
+							content: `Server created with name: ${name} and invite code: invite/${result.server?.inviteCode}`,
 							timestamp: Date.now() + 1,
 						},
 					]);
@@ -276,7 +271,10 @@ const BotPage = ({ params }: BotPageProps) => {
 
 				const result = await response.json();
 
-				if (result.success) {
+				console.log("HELLO", result.server);
+
+				if (result.success && result.server) {
+					toast.success(`Members fetched successfully`);
 					const membersList = result.server.members.map((member: any) => 
 						`- ${member.profile.name} (${member.role})`
 					).join('\n');
