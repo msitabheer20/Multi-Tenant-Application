@@ -47,7 +47,7 @@ export default async function handler(
         });
 
         if (!server) {
-            return res.status(404).json({message: "Server not found"})
+            return res.status(404).json({message: "Server not foun"})
         }
 
         const channel = await db.channel.findFirst({
