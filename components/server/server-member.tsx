@@ -40,7 +40,7 @@ export const ServerMember = ({
             router.push(`/servers/${params?.serverId}/bot`);
         }
         else if (isSlackBot) {
-            router.push(`/servers/${params?.serverId}/slack-bot`);
+            router.push(`/servers/${params?.serverId}/slackbot`);
         }
         else {
             router.push(`/servers/${params?.serverId}/conversations/${member.id}`);

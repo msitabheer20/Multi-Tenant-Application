@@ -260,7 +260,7 @@ export const ServerSidebar = async ({
 								profile: {
 									id: "bot-profile",
 									name: "Slack Assistant",
-									imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9IyV_DW-z2jGVxjscYWM0vM3X68UgOOu4yA&s",
+									imageUrl: "https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/306_Slack_logo-512.png",
 									createdAt: new Date(),
 									updatedAt: new Date(),
 									userId: "bot-user",

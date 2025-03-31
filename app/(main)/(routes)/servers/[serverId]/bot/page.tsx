@@ -413,13 +413,13 @@ const BotPage = ({ params }: BotPageProps) => {
 			{/* Chat Header */}
 			<div className="text-md font-semibold px-3 flex items-center justify-between h-12 border-neutral-200 dark:border-neutral-800 border-b-2">
 				<div className="flex items-center">
-					<UserAvatar
-						src="https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420"
-						className="h-8 w- md:h-8 md:w-8 mr-2"
-					/>
-					<p className="font-semibold text-md text-black dark:text-white">
-						AI Assistant
-					</p>
+				<UserAvatar
+					src="https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420"
+					className="h-8 w- md:h-8 md:w-8 mr-2"
+				/>
+				<p className="font-semibold text-md text-black dark:text-white">
+					AI Assistant
+				</p>
 				</div>
 				<button 
 					onClick={() => {
