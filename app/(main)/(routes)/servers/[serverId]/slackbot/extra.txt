@@ -33,6 +33,7 @@ export interface Message {
 	content: string;
 	timestamp: number;
 	customContent?: ReactNode;
+	lunchStatusData?: SlackLunchReport;
 }
 
 interface SlackUser {
@@ -51,46 +52,186 @@ interface SlackLunchReport {
 	timestamp: string;
 }
 
-interface ReportUser {
-	id: string;
-	name: string;
-	hasPosted: boolean;
-	timestamp?: string;
-	content?: string;
-	allReports?: Array<{ timestamp: string; content: string }>;
-}
-
-interface SlackReportStatusReport {
-	channel: string;
-	timeframe: string;
-	users: ReportUser[];
-	timestamp: string;
-}
-
-interface UpdateUser {
-	id: string;
-	name: string;
-	hasPosted: boolean;
-	timestamp?: string;
-	content?: string;
-	allUpdates?: Array<{ timestamp: string; content: string }>;
-}
-
-interface SlackUpdateReport {
-	channel: string;
-	timeframe: string;
-	users: UpdateUser[];
-	timestamp: string;
-}
-
 
 const SlackBotPage = ({ params }: SlackBotPageProps) => {
 	const resolvedParams = use(params);
-	const [messages, setMessages] = useState<Message[]>([]);
+	const [messages, setMessages] = useState<Message[]>(() => {
+		// Load messages from localStorage on initial render
+		if (typeof window !== 'undefined') {
+			try {
+				const savedMessages = localStorage.getItem(`slackbot-chat-messages-${resolvedParams.serverId}`);
+				if (savedMessages) {
+					const parsedMessages = JSON.parse(savedMessages);
+					// Recreate customContent for messages with lunchStatusData
+					return parsedMessages.map((msg: any) => {
+						if (msg.lunchStatusData) {
+							const result = msg.lunchStatusData;
+							return {
+								...msg,
+								customContent: (
+									<div className="w-full md:w-2/3 lg:w-4/5 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+										{/* Header */}
+										<div className="bg-zinc-50 dark:bg-zinc-800/90 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+											<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+												<i className="fas fa-utensils text-indigo-500"></i>
+												Lunch Status for #{result.channel} ({result.timeframe})
+											</h3>
+											<div className="mt-2 flex flex-wrap gap-2">
+												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300">
+													Total users: {result.users.filter((user: any) => user.name !== "checkbot").length}
+												</span>
+												<span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${result.total > 0
+													? 'bg-red-200 dark:bg-red-800 dark:text-zinc-300 text-red-700 dark:text-red-400'
+													: 'bg-emerald-100 dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400'
+													}`}>
+													Missing tags: {result.users.filter((user: any) => user.name !== "checkbot" && user.status !== "complete").length}
+												</span>
+											</div>
+										</div>
+
+										{/* Table data */}
+										<div className="overflow-x-auto dark:bg-zinc-800/90">
+											<table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+												<thead className="bg-zinc-100 dark:bg-zinc-800">
+													<tr>
+														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
+														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
+														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
+														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Lunch Start</th>
+														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Lunch End</th>
+														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Duration</th>
+													</tr>
+												</thead>
+												<tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
+													{result.users
+														.filter((user: any) => user.name !== "checkbot")
+														.sort((a: any, b: any) => {
+															if (a.status !== "complete" && b.status === "complete") return -1;
+															if (a.status === "complete" && b.status !== "complete") return 1;
+															return a.name.localeCompare(b.name);
+														})
+														.map((user: any, index: number) => {
+															// Calculate time gap if both timestamps exist
+															let timeGap = null;
+															let isLongBreak = false;
+
+															if (user.lunchStartTime && user.lunchEndTime) {
+																const startTime = new Date(user.lunchStartTime).getTime();
+																const endTime = new Date(user.lunchEndTime).getTime();
+																const diffInMinutes = Math.round((endTime - startTime) / (1000 * 60));
+																timeGap = diffInMinutes;
+																isLongBreak = diffInMinutes > 30;
+															}
+
+															// Set status style based on status - use zinc colors for dark mode
+															let statusBgClass = '';
+															let statusTextClass = '';
+
+															if (user.status === "complete") {
+																statusBgClass = 'bg-emerald-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-emerald-700 dark:text-emerald-400';
+															} else if (user.status === "missing both tags") {
+																statusBgClass = 'bg-red-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-red-700 dark:text-red-400';
+															} else if (user.status === "missing #lunchstart") {
+																statusBgClass = 'bg-amber-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-amber-700 dark:text-amber-400';
+															} else {
+																statusBgClass = 'bg-orange-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-orange-700 dark:text-orange-400';
+															}
+
+															const displayStatus = user.status === "missing #lunchend"
+																? "missing #lunchend/lunchover"
+																: user.status;
+
+															// Format timestamps
+															const startTime = user.lunchStartTime
+																? new Date(user.lunchStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+																: '-';
+
+															const endTime = user.lunchEndTime
+																? new Date(user.lunchEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+																: '-';
+
+															// Row background color for alternating rows
+															const rowBgClass = index % 2 === 0 ? 'bg-zinc-50 dark:bg-zinc-800/70' : 'bg-white dark:bg-zinc-900/50';
+
+															return (
+																<tr key={user.id} className={rowBgClass}>
+																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-200">
+																		{user.name}
+																		{/* Show times on mobile */}
+																		{(user.lunchStartTime || user.lunchEndTime) && (
+																			<div className="sm:hidden mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+																				{user.lunchStartTime && <div>Start: {startTime}</div>}
+																				{user.lunchEndTime && <div>End: {endTime}</div>}
+																			</div>
+																		)}
+																	</td>
+																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400 font-mono text-xs">
+																		{user.id}
+																	</td>
+																	<td className="px-6 py-4 whitespace-nowrap text-sm">
+																		<span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBgClass} ${statusTextClass}`}>
+																			{displayStatus}
+																		</span>
+																	</td>
+																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+																		{startTime}
+																	</td>
+																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+																		{endTime}
+																	</td>
+																	<td className="px-6 py-4 whitespace-nowrap text-sm">
+																		{timeGap !== null ? (
+																			<span className={isLongBreak
+																				? 'text-red-600 dark:text-red-400 font-medium'
+																				: 'text-emerald-600 dark:text-emerald-400'
+																			}>
+																				{timeGap} min {isLongBreak ? '⚠️' : '✅'}
+																			</span>
+																		) : (
+																			'-'
+																		)}
+																	</td>
+																</tr>
+															);
+														})}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								)
+							};
+						}
+						return msg;
+					});
+				}
+				return [];
+			} catch (e) {
+				console.error("Error parsing saved messages:", e);
+				return [];
+			}
+		}
+		return [];
+	});
+
+	
 	const [input, setInput] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const [selectedContent, setSelectedContent] = useState<{ content: string, name: string } | null>(null);
+
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			// Convert messages to a format that can be safely saved to localStorage
+			const serializableMessages = messages.map(msg => {
+				const { customContent, ...rest } = msg;
+				return rest; // Keep everything but the customContent React element
+			});
+			localStorage.setItem(`slackbot-chat-messages-${resolvedParams.serverId}`, JSON.stringify(serializableMessages));
+		}
+	}, [messages, resolvedParams.serverId]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -143,7 +284,6 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 			console.log('Success response data:', data);
 
 			if (data.functionCall && data.functionCall.name === 'getSlackLunchStatus') {
-
 				const result = data.functionCall.result as SlackLunchReport;
 				console.log("result users are here: ", result.users);
 				// Add assistant message with the lunch status table
@@ -154,6 +294,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 						role: 'assistant',
 						content: '',
 						timestamp: Date.now(),
+						lunchStatusData: result,
 						customContent: (
 							<div className="w-full md:w-2/3 lg:w-4/5 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
 								{/* Header */}
@@ -292,229 +433,6 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 					}
 				]);
 			}
-			else if (data.functionCall.name === 'getSlackUpdateStatus') {
-				// Handle Slack update status function
-				const result = data.functionCall.result as SlackUpdateReport;
-
-				// Add assistant message with the update status table
-				setMessages(prev => [
-					...prev,
-					{
-						id: Date.now().toString(),
-						role: 'assistant',
-						content: '',
-						timestamp: Date.now(),
-						customContent: (
-							<div className="w-full md:w-2/3 lg:w-4/5 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-								{/* Header */}
-								<div className="bg-zinc-50 dark:bg-zinc-800/90 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-									<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-										<i className="fas fa-clipboard-list text-indigo-500"></i>
-										Update Status for #{result.channel} ({result.timeframe})
-									</h3>
-									<div className="mt-2 flex flex-wrap gap-2">
-										<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300">
-											Users with updates: {result.users.filter(user => user.name !== "checkbot" && user.hasPosted).length}
-										</span>
-										<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-zinc-800 text-indigo-700 dark:text-indigo-400">
-											Total updates: {result.users.reduce((count, user) =>
-												user.name !== "checkbot" && user.allUpdates ? count + user.allUpdates.length : count, 0)}
-										</span>
-									</div>
-								</div>
-
-								{/* Table */}
-								<div className="overflow-x-auto dark:bg-zinc-800/90">
-									<table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-										<thead className="bg-zinc-100 dark:bg-zinc-800">
-											<tr>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
-												<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Posted At</th>
-											</tr>
-										</thead>
-										<tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
-											{/* Get all updates from all users */}
-											{result.users
-												// Filter out users with name "checkbot" and only show users with updates
-												.filter(user => user.name !== "checkbot" && user.hasPosted && user.allUpdates)
-												// Sort users by name
-												.sort((a, b) => a.name.localeCompare(b.name))
-												.flatMap((user) => {
-													// For each user, create a row for each update
-													return user.allUpdates!.map((update, updateIndex) => {
-														// Format timestamp
-														const postedTime = update.timestamp
-															? new Date(update.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-															: '-';
-
-														// Row background for alternating users
-														const baseRowBgClass = updateIndex % 2 === 0
-															? 'bg-zinc-50 dark:bg-zinc-800/70'
-															: 'bg-white dark:bg-zinc-900/50';
-
-														// Different shade for first row of each user to help visually group updates
-														const rowBgClass = updateIndex === 0
-															? `${baseRowBgClass} border-t-2 border-zinc-300 dark:border-zinc-700`
-															: baseRowBgClass;
-
-														return (
-															<tr
-																key={`${user.id}-${updateIndex}`}
-																className={`${rowBgClass} cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700`}
-																onClick={() => {
-																	if (update.content) {
-																		setSelectedContent({
-																			name: `${user.name} (Update ${updateIndex + 1})`,
-																			content: update.content
-																		});
-																	}
-																}}
-															>
-																<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-200">
-																	{user.name}
-																	{updateIndex > 0 ? (
-																		<span className="ml-2 text-xs text-indigo-600 dark:text-indigo-400">
-																			(Update {updateIndex + 1})
-																		</span>
-																	) : null}
-																</td>
-																<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400 font-mono text-xs">
-																	{user.id}
-																</td>
-																<td className="px-6 py-4 whitespace-nowrap text-sm">
-																	<span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-zinc-700/90 text-emerald-700 dark:text-emerald-400">
-																		Posted Update
-																	</span>
-																</td>
-																<td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
-																	{postedTime}
-																</td>
-															</tr>
-														);
-													});
-												})}
-										</tbody>
-									</table>
-								</div>
-							</div>
-						)
-					}
-				]);
-			}
-
-			else if (data.functionCall.name === 'getSlackReportStatus') {
-				// Handle Slack report status function
-				const result = data.functionCall.result as SlackReportStatusReport;
-
-				// Add assistant message with the report status table
-				setMessages(prev => [
-					...prev,
-					{
-						id: Date.now().toString(),
-						role: 'assistant',
-						content: '',
-						timestamp: Date.now(),
-						customContent: (
-							<div className="w-full md:w-2/3 lg:w-4/5 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-								{/* Header */}
-								<div className="bg-zinc-50 dark:bg-zinc-800/90 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-									<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-										<i className="fas fa-file-alt text-indigo-500"></i>
-										Report Status for #{result.channel} ({result.timeframe})
-									</h3>
-									<div className="mt-2 flex flex-wrap gap-2">
-										<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300">
-											Users with reports: {result.users.filter(user => user.name !== "checkbot" && user.hasPosted).length}
-										</span>
-										<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-zinc-800 text-indigo-700 dark:text-indigo-400">
-											Total reports: {result.users.reduce((count, user) =>
-												user.name !== "checkbot" && user.allReports ? count + user.allReports.length : count, 0)}
-										</span>
-									</div>
-								</div>
-
-								{/* Table */}
-								<div className="overflow-x-auto dark:bg-zinc-800/90">
-									<table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-										<thead className="bg-zinc-100 dark:bg-zinc-800">
-											<tr>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
-												<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Posted At</th>
-											</tr>
-										</thead>
-										<tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
-											{/* Get all reports from all users */}
-											{result.users
-												// Filter out users with name "checkbot" and only show users with reports
-												.filter(user => user.name !== "checkbot" && user.hasPosted && user.allReports)
-												// Sort users by name
-												.sort((a, b) => a.name.localeCompare(b.name))
-												.flatMap((user) => {
-													// For each user, create a row for each report
-													return user.allReports!.map((report, reportIndex) => {
-														// Format timestamp
-														const postedTime = report.timestamp
-															? new Date(report.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-															: '-';
-
-														// Row background for alternating users
-														const baseRowBgClass = reportIndex % 2 === 0
-															? 'bg-zinc-50 dark:bg-zinc-800/70'
-															: 'bg-white dark:bg-zinc-900/50';
-
-														// Different shade for first row of each user to help visually group reports
-														const rowBgClass = reportIndex === 0
-															? `${baseRowBgClass} border-t-2 border-zinc-300 dark:border-zinc-700`
-															: baseRowBgClass;
-
-														return (
-															<tr
-																key={`${user.id}-${reportIndex}`}
-																className={`${rowBgClass} cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700`}
-																onClick={() => {
-																	if (report.content) {
-																		setSelectedContent({
-																			name: `${user.name} (Report ${reportIndex + 1})`,
-																			content: report.content
-																		});
-																	}
-																}}
-															>
-																<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-200">
-																	{user.name}
-																	{reportIndex > 0 ? (
-																		<span className="ml-2 text-xs text-indigo-600 dark:text-indigo-400">
-																			(Report {reportIndex + 1})
-																		</span>
-																	) : null}
-																</td>
-																<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400 font-mono text-xs">
-																	{user.id}
-																</td>
-																<td className="px-6 py-4 whitespace-nowrap text-sm">
-																	<span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-zinc-700/90 text-emerald-700 dark:text-emerald-400">
-																		Posted Report
-																	</span>
-																</td>
-																<td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
-																	{postedTime}
-																</td>
-															</tr>
-														);
-													});
-												})}
-										</tbody>
-									</table>
-								</div>
-							</div>
-						)
-					}
-				]);
-			}
 			else {
 				// Normal message
 				setMessages(prev => [
@@ -570,6 +488,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 				</div>
 				<button
 					onClick={() => {
+						localStorage.removeItem(`slackbot-chat-messages-${resolvedParams.serverId}`);
 						setMessages([]);
 						toast.success('Chat history cleared');
 					}}
@@ -593,7 +512,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 									{message.role === 'user' ? 'YOU' : message.role === 'assistant' ? 'BOT' : 'SYSTEM'}
 								</span>
 
-
+								
 
 								{message.customContent ? (
 									<div className="custom-content">
@@ -646,39 +565,6 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 					</FormField>
 				</form>
 			</Form>
-
-
-			{selectedContent && (
-				<div className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-					<div className="bg-white dark:bg-zinc-800/90 rounded-lg shadow-lg max-w-lg w-full mx-4 p-3 border border-zinc-200 dark:border-zinc-700">
-						<div className="flex justify-between items-center mb-3 px-1">
-							<h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-								<i className="fas fa-comment text-indigo-500"></i>
-								{selectedContent.name}
-							</h3>
-							<button
-								onClick={() => setSelectedContent(null)}
-								className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-								</svg>
-							</button>
-						</div>
-						<div className="bg-zinc-50 dark:bg-zinc-900/80 p-4 rounded-md max-h-96 overflow-y-auto border border-zinc-200 dark:border-zinc-700/80">
-							<p className="text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap text-sm">{selectedContent.content}</p>
-						</div>
-						<div className="mt-3 text-right">
-							<button 
-								onClick={() => setSelectedContent(null)} 
-								className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-200 text-sm font-medium rounded-md transition-colors"
-							>
-								Close
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }
