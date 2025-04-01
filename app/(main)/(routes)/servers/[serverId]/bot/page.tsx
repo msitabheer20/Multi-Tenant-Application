@@ -288,28 +288,32 @@ const BotPage = ({ params }: BotPageProps) => {
 				if (result.success && result.server) {
 					toast.success(`Members fetched successfully`);
 					const membersList = result.server.members.map((member: any) => 
-						`<div class="flex items-center gap-2">
-							<span class="text-zinc-500">-</span>
-							<span class="text-indigo-500 font-bold">${member.profile.name}</span>
-							<span class="text-zinc-500">(</span>
-							<span class="font-semibold">${member.role}</span>
-							<span class="text-zinc-500">)</span>
-							<button onclick="window.location.href='/servers/${resolvedParams.serverId}/conversations/${member.id}'" class="text-white bg-indigo-500 hover:font-bold hover:bg-indigo-600 px-3 py-1 rounded-md font-sm transition-colors flex items-center gap-1">Message<i class="fas fa-paper-plane"></i></button>
+						`<div class="bg-white dark:bg-zinc-700/80 rounded-md shadow-sm p-2 mb-2 flex items-center justify-between hover:shadow-md transition-all">
+							<div class="flex items-center gap-2">
+								<div class="w-2 h-2 rounded-full ${member.role === 'ADMIN' ? 'bg-red-500' : member.role === 'MODERATOR' ? 'bg-blue-500' : 'bg-gray-500'}"></div>
+								<span class="font-medium dark:text-zinc-100">${member.profile.name}</span>
+								<span class="text-xs text-zinc-500 dark:text-zinc-300 px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-600 rounded-full">${member.role.toLowerCase()}</span>
+							</div>
+							<button onclick="window.location.href='/servers/${resolvedParams.serverId}/conversations/${member.id}'" class="text-white bg-indigo-500 hover:bg-indigo-600 px-2.5 py-1 text-xs rounded flex items-center gap-1 transition-colors">
+								<i class="fas fa-paper-plane text-xs"></i>
+								<span>Message</span>
+							</button>
 						</div>`
 					).join('');
 
 					setMessages(prev => [
 						...prev,
 						{
-							id: Date.now().toString(),
-							role: 'assistant',
-							content: data.content,
-							timestamp: Date.now(),
-						},
-						{
 							id: (Date.now() + 1).toString(),
 							role: 'system',
-							content: `<div class="space-y-2">${membersList}</div>`,
+							content: `<div class="w-1/3 bg-zinc-50 dark:bg-zinc-800/90 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-md font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                        <i class="fas fa-users text-indigo-500"></i> Server Members (${result.server.members.length})
+                                    </h3>
+                                </div>
+                                <div class="space-y-2">${membersList}</div>
+                            </div>`,
 							timestamp: Date.now() + 1,
 						},
 					]);
@@ -343,17 +347,29 @@ const BotPage = ({ params }: BotPageProps) => {
 				if (result) {
 					toast.success(`Channels fetched successfully`);
 					const channelsList = result.map((channel: any) => 
-						`<div class="flex items-center gap-2">
-							<span class="text-zinc-500">-</span>
-							<span class="font-semibold text-indigo-500">${channel.name}</span>
-							<span class="font-semibold">(${channel.type} channel)</span>
-							<button onclick="window.location.href='/servers/${resolvedParams.serverId}/channels/${channel.id}'" class="text-white bg-emerald-500 hover:font-bold hover:bg-emerald-600 px-3 py-1 rounded-md font-sm transition-colors flex items-center gap-1">Message<i class="fas fa-paper-plane"></i></button>
+						`<div class="bg-white dark:bg-zinc-700/80 rounded-md shadow-sm p-2 mb-2 flex items-center justify-between hover:shadow-md transition-all">
+							<div class="flex items-center gap-2">
+								<div class="w-2 h-2 rounded-full ${channel.type === 'TEXT' ? 'bg-emerald-500' : channel.type === 'AUDIO' ? 'bg-amber-500' : 'bg-purple-500'}"></div>
+								<span class="font-medium dark:text-zinc-100">${channel.name}</span>
+								<span class="text-xs text-zinc-500 dark:text-zinc-300 px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-600 rounded-full">${channel.type.toLowerCase()}</span>
+							</div>
+							<button onclick="window.location.href='/servers/${resolvedParams.serverId}/channels/${channel.id}'" class="text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1 text-xs rounded flex items-center gap-1 transition-colors">
+								<i class="fas fa-paper-plane text-xs"></i>
+								<span>Message</span>
+							</button>
 						</div>`
 					).join('');
 
 					setMessages((current) => [...current, {
 						id: Date.now().toString(),
-						content: `<div class="space-y-2">${channelsList}</div>`,
+						content: `<div class="w-1/3 bg-zinc-50 dark:bg-zinc-800/90 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-md font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                    <i class="fas fa-hashtag text-emerald-500"></i> Server Channels (${result.length})
+                                </h3>
+                            </div>
+                            <div class="space-y-2">${channelsList}</div>
+                        </div>`,
 						role: "assistant",
 						timestamp: Date.now(),
 					}]);
@@ -366,7 +382,6 @@ const BotPage = ({ params }: BotPageProps) => {
 				throw error;
 			}
 		  }
-		  
 
 		  else {
 			// Normal message
@@ -447,7 +462,7 @@ const BotPage = ({ params }: BotPageProps) => {
 									{message.role === 'user' ? 'YOU' : 'BOT'}
 								</span>
 								<p 
-									className="whitespace-pre-wrap"
+									className=""
 									dangerouslySetInnerHTML={{ __html: message.content }}
 								/>
 								<span className="text-xs opacity-70 mt-1 block">

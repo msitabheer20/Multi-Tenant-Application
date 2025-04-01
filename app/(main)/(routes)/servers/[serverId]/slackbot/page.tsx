@@ -59,7 +59,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 	const [messages, setMessages] = useState<Message[]>(() => {
 		// Load messages from localStorage on initial render
 		if (typeof window !== 'undefined') {
-			const savedMessages = localStorage.getItem(`bot-chat-messages-${resolvedParams.serverId}`);
+			const savedMessages = localStorage.getItem(`slackbot-chat-messages-${resolvedParams.serverId}`);
 			return savedMessages ? JSON.parse(savedMessages) : [];
 		}
 		return [];
@@ -70,7 +70,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 
 	useEffect(() => {
 		if (typeof window !== 'undefined') {
-			localStorage.setItem(`bot-chat-messages-${resolvedParams.serverId}`, JSON.stringify(messages));
+			localStorage.setItem(`slackbot-chat-messages-${resolvedParams.serverId}`, JSON.stringify(messages));
 		}
 	}, [messages, resolvedParams.serverId]);
 
@@ -143,6 +143,8 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 				]);
 			}
 
+			
+
 			else {
 				// Normal message
 				setMessages(prev => [
@@ -190,7 +192,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 				<div className="flex items-center">
 					<UserAvatar
 						src="https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/306_Slack_logo-512.png"
-						className="h-8 w- md:h-8 md:w-8 mr-2"
+						className="h-8 md:h-8 md:w-8 mr-2"
 					/>
 					<p className="font-semibold text-md text-black dark:text-white">
 						Slack Assistant
@@ -198,7 +200,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 				</div>
 				<button
 					onClick={() => {
-						localStorage.removeItem(`bot-chat-messages-${resolvedParams.serverId}`);
+						localStorage.removeItem(`slackbot-chat-messages-${resolvedParams.serverId}`);
 						setMessages([]);
 						toast.success('Chat history cleared');
 					}}
@@ -229,17 +231,18 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 								{message.isCustomContent && message.customContentType === 'lunchStatus' && message.customData && (
 									<div className="w-full md:w-2/3 lg:w-4/5 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
 										{/* Header */}
-										<div className="bg-white dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-											<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+										<div className="bg-zinc-50 dark:bg-zinc-800/90 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+											<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+												<i className="fas fa-utensils text-indigo-500"></i>
 												Lunch Status for #{message.customData.channel} ({message.customData.timeframe})
 											</h3>
 											<div className="mt-2 flex flex-wrap gap-2">
-												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-300">
 													Total users: {message.customData.users.filter((user: any) => user.name !== "checkbot").length}
 												</span>
 												<span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${message.customData.total > 0
-													? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-													: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+													? 'bg-red-200 dark:bg-red-800 dark:text-zinc-300 text-red-700 dark:text-red-400'
+													: 'bg-emerald-100 dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400'
 												}`}>
 													Missing tags: {message.customData.users.filter((user: any) => user.name !== "checkbot" && user.status !== "complete").length}
 												</span>
@@ -247,19 +250,19 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 										</div>
 
 										{/* Table data */}
-										<div className="overflow-x-auto">
-											<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-												<thead className="bg-gray-50 dark:bg-gray-900">
+										<div className="overflow-x-auto dark:bg-zinc-800/90">
+											<table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+												<thead className="bg-zinc-100 dark:bg-zinc-800">
 													<tr>
-														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lunch Start</th>
-														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lunch End</th>
-														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
+														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
+														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
+														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
+														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Lunch Start</th>
+														<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Lunch End</th>
+														<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Duration</th>
 													</tr>
 												</thead>
-												<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+												<tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
 													{message.customData.users
 														.filter((user: any) => user.name !== "checkbot")
 														.sort((a: any, b: any) => {
@@ -280,22 +283,22 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 																isLongBreak = diffInMinutes > 30;
 															}
 
-															// Set status style based on status
+															// Set status style based on status - use zinc colors for dark mode
 															let statusBgClass = '';
 															let statusTextClass = '';
 
 															if (user.status === "complete") {
-																statusBgClass = 'bg-green-100 dark:bg-green-900';
-																statusTextClass = 'text-green-800 dark:text-green-200';
+																statusBgClass = 'bg-emerald-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-emerald-700 dark:text-emerald-400';
 															} else if (user.status === "missing both tags") {
-																statusBgClass = 'bg-red-100 dark:bg-red-900';
-																statusTextClass = 'text-red-800 dark:text-red-200';
+																statusBgClass = 'bg-red-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-red-700 dark:text-red-400';
 															} else if (user.status === "missing #lunchstart") {
-																statusBgClass = 'bg-yellow-100 dark:bg-yellow-900';
-																statusTextClass = 'text-yellow-800 dark:text-yellow-200';
+																statusBgClass = 'bg-amber-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-amber-700 dark:text-amber-400';
 															} else {
-																statusBgClass = 'bg-orange-100 dark:bg-orange-900';
-																statusTextClass = 'text-orange-800 dark:text-orange-200';
+																statusBgClass = 'bg-orange-100 dark:bg-zinc-700/90';
+																statusTextClass = 'text-orange-700 dark:text-orange-400';
 															}
 
 															const displayStatus = user.status === "missing #lunchend"
@@ -312,21 +315,21 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 																: '-';
 
 															// Row background color for alternating rows
-															const rowBgClass = index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900/50' : 'bg-white dark:bg-gray-800';
+															const rowBgClass = index % 2 === 0 ? 'bg-zinc-50 dark:bg-zinc-800/70' : 'bg-white dark:bg-zinc-900/50';
 
 															return (
 																<tr key={user.id} className={rowBgClass}>
-																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
+																	<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-200">
 																		{user.name}
 																		{/* Show times on mobile */}
 																		{(user.lunchStartTime || user.lunchEndTime) && (
-																			<div className="sm:hidden mt-1 text-xs text-gray-500 dark:text-gray-400">
+																			<div className="sm:hidden mt-1 text-xs text-zinc-500 dark:text-zinc-400">
 																				{user.lunchStartTime && <div>Start: {startTime}</div>}
 																				{user.lunchEndTime && <div>End: {endTime}</div>}
 																			</div>
 																		)}
 																	</td>
-																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono text-xs">
+																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400 font-mono text-xs">
 																		{user.id}
 																	</td>
 																	<td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -334,17 +337,17 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 																			{displayStatus}
 																		</span>
 																	</td>
-																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
 																		{startTime}
 																	</td>
-																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+																	<td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
 																		{endTime}
 																	</td>
 																	<td className="px-6 py-4 whitespace-nowrap text-sm">
 																		{timeGap !== null ? (
 																			<span className={isLongBreak
 																				? 'text-red-600 dark:text-red-400 font-medium'
-																				: 'text-green-600 dark:text-green-400'
+																				: 'text-emerald-600 dark:text-emerald-400'
 																			}>
 																				{timeGap} min {isLongBreak ? '⚠️' : '✅'}
 																			</span>
