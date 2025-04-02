@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ReactNode } from 'react';
-import { useRouter, usePathname } from "next/navigation";
 
 import {
 	Form,
@@ -58,7 +57,7 @@ interface ReportUser {
 	hasPosted: boolean;
 	timestamp?: string;
 	content?: string;
-	allReports?: Array<{ timestamp: string; content: string }>;
+	allReports?: Array<{ timestamp: string; content: string, date: string }>;
 }
 
 interface SlackReportStatusReport {
@@ -74,7 +73,7 @@ interface UpdateUser {
 	hasPosted: boolean;
 	timestamp?: string;
 	content?: string;
-	allUpdates?: Array<{ timestamp: string; content: string }>;
+	allUpdates?: Array<{ timestamp: string; content: string, date: string }>;
 }
 
 interface SlackUpdateReport {
@@ -143,9 +142,38 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 			const data = await response.json();
 			console.log('Success response data:', data);
 
+			// Check if the response contains an error message
+			if (data.error || (data.content && data.content.includes('I encountered an error'))) {
+				setMessages(prev => [
+					...prev,
+					{
+						id: Date.now().toString(),
+						role: 'assistant',
+						content: data.content || data.error,
+						timestamp: Date.now(),
+					},
+				]);
+				return;
+			}
+
 			if (data.functionCall && data.functionCall.name === 'getSlackLunchStatus') {
 
 				const result = data.functionCall.result as SlackLunchReport;
+				
+				// Check if we have a valid result with users before continuing
+				if (!result || !result.users) {
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: "Error: Unable to retrieve channel data. The channel might not exist or the bot doesn't have access to it.",
+							timestamp: Date.now(),
+						},
+					]);
+					return;
+				}
+				
 				console.log("result users are here: ", result.users);
 				// Add assistant message with the lunch status table
 				setMessages(prev => [
@@ -293,9 +321,24 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 					}
 				]);
 			}
-			else if (data.functionCall.name === 'getSlackUpdateStatus') {
+
+			else if (data.functionCall && data.functionCall.name === 'getSlackUpdateStatus') {
 				// Handle Slack update status function
 				const result = data.functionCall.result as SlackUpdateReport;
+				
+				// Check if we have a valid result with users before continuing
+				if (!result || !result.users) {
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: "Error: Unable to retrieve channel data. The channel might not exist or the bot doesn't have access to it.",
+							timestamp: Date.now(),
+						},
+					]);
+					return;
+				}
 
 				// Add assistant message with the update status table
 				setMessages(prev => [
@@ -332,7 +375,8 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
 												<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
 												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Posted At</th>
+												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Date</th>
+												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Time</th>
 											</tr>
 										</thead>
 										<tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
@@ -349,6 +393,8 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 														const postedTime = update.timestamp
 															? new Date(update.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 															: '-';
+
+															const postedDate = update.date || '-';
 
 														// Row background for alternating users
 														const baseRowBgClass = updateIndex % 2 === 0
@@ -390,6 +436,9 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 																	</span>
 																</td>
 																<td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+																	{postedDate}
+																</td>
+																<td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
 																	{postedTime}
 																</td>
 															</tr>
@@ -405,9 +454,23 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 				]);
 			}
 
-			else if (data.functionCall.name === 'getSlackReportStatus') {
+			else if (data.functionCall && data.functionCall.name === 'getSlackReportStatus') {
 				// Handle Slack report status function
 				const result = data.functionCall.result as SlackReportStatusReport;
+				
+				// Check if we have a valid result with users before continuing
+				if (!result || !result.users) {
+					setMessages(prev => [
+						...prev,
+						{
+							id: Date.now().toString(),
+							role: 'assistant',
+							content: "Error: Unable to retrieve channel data. The channel might not exist or the bot doesn't have access to it.",
+							timestamp: Date.now(),
+						},
+					]);
+					return;
+				}
 
 				// Add assistant message with the report status table
 				setMessages(prev => [
@@ -444,7 +507,8 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
 												<th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
 												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Posted At</th>
+												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Date</th>
+												<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Time</th>
 											</tr>
 										</thead>
 										<tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
@@ -461,6 +525,8 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 														const postedTime = report.timestamp
 															? new Date(report.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 															: '-';
+
+														const postedDate = report.date || '-';
 
 														// Row background for alternating users
 														const baseRowBgClass = reportIndex % 2 === 0
@@ -502,6 +568,9 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 																	</span>
 																</td>
 																<td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+																	{postedDate}
+																</td>
+																<td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
 																	{postedTime}
 																</td>
 															</tr>
@@ -516,6 +585,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 					}
 				]);
 			}
+
 			else {
 				// Normal message
 				setMessages(prev => [
@@ -528,6 +598,7 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 					},
 				]);
 			}
+			
 		} catch (error) {
 			console.error('Full error details:', error);
 			setMessages(prev => [

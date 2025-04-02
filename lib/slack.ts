@@ -14,13 +14,37 @@ interface LunchStatus {
     lunchEndTime?: string;
 }
 
+interface SlackLunchReport {
+    channel: string;
+    timeframe: "today" | "yesterday" | "this_week";
+    users: LunchStatus[];
+    total: number;
+    timestamp: string;
+}
+
+export interface UpdateStatus {
+    name: string;
+    id: string;
+    hasPosted: boolean;
+    timestamp?: string;
+    content?: string;
+    allUpdates?: Array<{ timestamp: string; content: string; date?: string }>;
+}
+
 export interface ReportStatus {
     name: string;
     id: string;
     hasPosted: boolean;
     timestamp?: string;
     content?: string;
-    allReports?: Array<{ timestamp: string; content: string }>;
+    allReports?: Array<{ timestamp: string; content: string; date?: string }>;
+}
+
+export interface SlackUpdateReport {
+    channel: string;
+    timeframe: "today" | "yesterday" | "this_week";
+    users: UpdateStatus[];
+    timestamp: string;
 }
 
 export interface SlackReportStatusReport {
@@ -30,18 +54,80 @@ export interface SlackReportStatusReport {
     timestamp: string;
 }
 
-interface SlackLunchReport {
-    channel: string;
-    timeframe: "today" | "yesterday" | "this_week";
-    users: LunchStatus[];
-    total: number;
-    timestamp: string;
-}
-
 interface SlackApiResponse {
     ok: boolean;
     error?: string;
     [key: string]: any;
+}
+
+// //////////Functions for AI//////////////////////
+
+async function fetchSlackApi(method: string, params: Record<string, any> = {}): Promise<SlackApiResponse> {
+    try {
+        const token = process.env.SLACK_BOT_TOKEN;
+
+        if (!token) {
+            throw new Error('SLACK_BOT_TOKEN is not defined in environment variables');
+        }
+
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            queryParams.append(key, value);
+        });
+
+        const url = `https://slack.com/api/${method}?${queryParams.toString()}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+
+        if (!response.ok) {
+            // Check for rate limiting
+            if (response.status === 429) {
+                const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
+                console.warn(`Rate limited by Slack API. Retry after ${retryAfter} seconds.`);
+
+                // Wait and retry once after rate limiting
+                await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                return fetchSlackApi(method, params);
+            }
+
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Handle pagination automatically if needed and the 'cursor' param isn't already set
+        if (data.ok && data.response_metadata?.next_cursor && !params.cursor) {
+            // If a paginated response with more results, fetch the next page
+            console.log(`Fetching next page for ${method} with cursor: ${data.response_metadata.next_cursor}`);
+
+            const nextPageResponse = await fetchSlackApi(method, {
+                ...params,
+                cursor: data.response_metadata.next_cursor
+            });
+
+            // Combine results from both pages
+            if (Array.isArray(data.members)) {
+                data.members = [...data.members, ...(nextPageResponse.members || [])];
+            }
+            if (Array.isArray(data.channels)) {
+                data.channels = [...data.channels, ...(nextPageResponse.channels || [])];
+            }
+            if (Array.isArray(data.messages)) {
+                data.messages = [...data.messages, ...(nextPageResponse.messages || [])];
+            }
+        }
+
+        return data as SlackApiResponse;
+    } catch (error) {
+        console.error(`Error calling Slack API method ${method}:`, error);
+        throw error;
+    }
 }
 
 export async function getSlackLunchStatus(
@@ -52,7 +138,7 @@ export async function getSlackLunchStatus(
         // Step 1: Find channel ID from name
         const channelId = await findChannelId(channelName);
         if (!channelId) {
-            throw new Error(`Channel #${channelName} not found`);
+            throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
         }
 
         // Step 2: Get all users in the channel
@@ -144,13 +230,13 @@ async function findChannelId(channelName: string): Promise<string | null> {
 
         if (!channel) {
             console.error(`Channel #${channelName} not found in the list of accessible channels`);
-            throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
+            return null;
         }
 
         // Check if the bot is a member of the channel
         if (!channel.is_member) {
             console.error(`Bot is not a member of channel #${channelName} (${channel.id})`);
-            throw new Error(`Bot is not a member of channel #${channelName}. Please add the bot to the channel first.`);
+            return null;
         }
 
         console.log(`Found channel: ${channel.name} (ID: ${channel.id})`);
@@ -333,74 +419,6 @@ async function getUserInfo(userId: string): Promise<SlackUser> {
     }
 }
 
-async function fetchSlackApi(method: string, params: Record<string, any> = {}): Promise<SlackApiResponse> {
-    try {
-        const token = process.env.SLACK_BOT_TOKEN;
-
-        if (!token) {
-            throw new Error('SLACK_BOT_TOKEN is not defined in environment variables');
-        }
-
-        const queryParams = new URLSearchParams();
-        Object.entries(params).forEach(([key, value]) => {
-            queryParams.append(key, value);
-        });
-
-        const url = `https://slack.com/api/${method}?${queryParams.toString()}`;
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        });
-
-        if (!response.ok) {
-            // Check for rate limiting
-            if (response.status === 429) {
-                const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
-                console.warn(`Rate limited by Slack API. Retry after ${retryAfter} seconds.`);
-
-                // Wait and retry once after rate limiting
-                await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-                return fetchSlackApi(method, params);
-            }
-
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Handle pagination automatically if needed and the 'cursor' param isn't already set
-        if (data.ok && data.response_metadata?.next_cursor && !params.cursor) {
-            // If a paginated response with more results, fetch the next page
-            console.log(`Fetching next page for ${method} with cursor: ${data.response_metadata.next_cursor}`);
-
-            const nextPageResponse = await fetchSlackApi(method, {
-                ...params,
-                cursor: data.response_metadata.next_cursor
-            });
-
-            // Combine results from both pages
-            if (Array.isArray(data.members)) {
-                data.members = [...data.members, ...(nextPageResponse.members || [])];
-            }
-            if (Array.isArray(data.channels)) {
-                data.channels = [...data.channels, ...(nextPageResponse.channels || [])];
-            }
-            if (Array.isArray(data.messages)) {
-                data.messages = [...data.messages, ...(nextPageResponse.messages || [])];
-            }
-        }
-
-        return data as SlackApiResponse;
-    } catch (error) {
-        console.error(`Error calling Slack API method ${method}:`, error);
-        throw error;
-    }
-}
-
 function getTimeframeStart(timeframe: "today" | "yesterday" | "this_week"): number {
     const now = new Date();
     switch (timeframe) {
@@ -424,7 +442,7 @@ async function getUserUpdateTag(
     userId: string,
     channelId: string,
     since: number
-): Promise<Array<{ timestamp: string; content: string }>> {
+): Promise<Array<{ timestamp: string; content: string, date: string }>> {
     try {
         const sinceTimestamp = Math.floor(since / 1000); // Convert to seconds for Slack API
 
@@ -456,7 +474,13 @@ async function getUserUpdateTag(
 
         // Process all update messages
         return updateMessages.map((message: any) => {
-            const timestamp = new Date(parseInt(message.ts) * 1000).toISOString();
+            const timestampDate = new Date(parseInt(message.ts) * 1000);
+            const timestamp = timestampDate.toISOString();
+            const date = timestampDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
 
             // Extract the content after #update
             let content = message.text;
@@ -465,7 +489,7 @@ async function getUserUpdateTag(
                 content = content.substring(updateIndex + '#update'.length).trim();
             }
 
-            return { timestamp, content };
+            return { timestamp, content, date };
         });
     } catch (error) {
         console.error(`Error getting update tags for user ${userId}:`, error);
@@ -480,7 +504,7 @@ export async function getSlackUpdateStatus(
     try {
         const channelId = await findChannelId(channelName);
         if (!channelId) {
-            throw new Error(`Channel "${channelName}" not found. Please check the channel name.`);
+            throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
         }
 
         // Get timestamp based on timeframe
@@ -523,7 +547,7 @@ async function getUserReportTag(
     userId: string,
     channelId: string,
     since: number
-): Promise<Array<{ timestamp: string; content: string }>> {
+): Promise<Array<{ timestamp: string; content: string, date: string }>> {
     try {
         const sinceTimestamp = Math.floor(since / 1000); // Convert to seconds for Slack API
 
@@ -555,7 +579,13 @@ async function getUserReportTag(
 
         // Process all report messages
         return reportMessages.map((message: any) => {
-            const timestamp = new Date(parseInt(message.ts) * 1000).toISOString();
+            const timestampDate = new Date(parseInt(message.ts) * 1000);
+            const timestamp = timestampDate.toISOString();
+            const date = timestampDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
 
             // Extract the content after #report
             let content = message.text;
@@ -564,7 +594,7 @@ async function getUserReportTag(
                 content = content.substring(reportIndex + '#report'.length).trim();
             }
 
-            return { timestamp, content };
+            return { timestamp, content, date };
         });
     } catch (error) {
         console.error(`Error getting report tags for user ${userId}:`, error);
@@ -579,7 +609,7 @@ export async function getSlackReportStatus(
     try {
         const channelId = await findChannelId(channelName);
         if (!channelId) {
-            throw new Error(`Channel "${channelName}" not found. Please check the channel name.`);
+            throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
         }
 
         // Get timestamp based on timeframe

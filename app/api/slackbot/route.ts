@@ -165,7 +165,7 @@ export async function POST(req: Request) {
                             });
                         }
 
-                        // Get actual data from the Slack utility (currently returns mock data)
+                        // Get actual data from the Slack utility
                         const slackData = await getSlackLunchStatus(
                             channelName,
                             timeframe as "today" | "yesterday" | "this_week"
@@ -180,30 +180,17 @@ export async function POST(req: Request) {
                                 result: slackData
                             }
                         });
+
                     } catch (error) {
-                        console.error('Error getting Slack lunch status:', error);
+                        console.error('Error in getSlackLunchStatus function call:', error);
 
-                        const errorMessage = error instanceof Error ? error.message : 'Unknown error with Slack integration';
-                        let detailedMessage = `I was unable to retrieve the lunch status information for #${channelName}. There might be an issue with the Slack integration.`;
-
-                        // Provide more helpful messages based on error type
-                        if (errorMessage.includes('missing_scope') || errorMessage.includes('Missing Slack permission')) {
-                            detailedMessage = `I'm unable to check lunch status because the Slack bot needs additional permissions. Please ask an administrator to update the Slack app's permissions to include: channels:read, channels:history, and users:read scopes.`;
-                        } else if (errorMessage.includes('not found')) {
-                            detailedMessage = `I couldn't find a channel named #${channelName}. Please check that the channel exists and I have been added to the workspace.`;
-                        } else if (errorMessage.includes('not a member')) {
-                            detailedMessage = `I'm not a member of the #${channelName} channel. Please invite me to the channel by typing "@YourBotName" in the channel, then try again.`;
-                        } else if (errorMessage.includes('token_revoked') || errorMessage.includes('invalid_auth')) {
-                            detailedMessage = `There's an authentication issue with the Slack integration. Please ask an administrator to check the Slack token configuration.`;
-                        }
-
-                        // Return error message
                         return NextResponse.json({
-                            content: detailedMessage,
-                            error: errorMessage
-                        });
+                            content: `I encountered an error checking lunch status for #${channelName}: Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`,
+                            error: `Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`
+                        }, { status: 200 });
                     }
                 }
+
                 else if (toolCall.type === 'function' && toolCall.function.name === 'getSlackUpdateStatus') {
                     const functionArgs = JSON.parse(toolCall.function.arguments);
                     const channelName = functionArgs.channelName;
@@ -242,9 +229,10 @@ export async function POST(req: Request) {
                         return NextResponse.json({
                             content: `I encountered an error checking update status for #${channelName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
                             error: error instanceof Error ? error.message : 'Unknown error'
-                        });
+                        }, { status: 200 });
                     }
                 }
+
                 else if (toolCall.type === 'function' && toolCall.function.name === 'getSlackReportStatus') {
                     const functionArgs = JSON.parse(toolCall.function.arguments);
                     const channelName = functionArgs.channelName;
@@ -283,7 +271,7 @@ export async function POST(req: Request) {
                         return NextResponse.json({
                             content: `I encountered an error checking report status for #${channelName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
                             error: error instanceof Error ? error.message : 'Unknown error'
-                        });
+                        }, { status: 200 });
                     }
                 }
             }
