@@ -54,7 +54,18 @@ export default function RootLayout({
               <SocketProvider>
                 <ModalProvider />
                 <QueryProvider>
-                  <Toaster />
+                  <Toaster 
+                    theme="system" 
+                    richColors 
+                    toastOptions={{
+                      style: {
+                        background: 'var(--background)',
+                        color: 'var(--foreground)',
+                        border: '1px solid var(--border)'
+                      },
+                      className: 'font-sans',
+                    }}
+                  />
                   {children}
                 </QueryProvider>
               </SocketProvider>

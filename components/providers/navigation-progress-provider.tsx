@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 interface NavigationProgressContextType {
   isNavigating: boolean;
@@ -20,56 +20,110 @@ const NavigationProgressContext = createContext<NavigationProgressContextType>({
 export const useNavigationProgress = () => useContext(NavigationProgressContext);
 
 export const NavigationProgressProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [progressInterval, setProgressInterval] = useState<NodeJS.Timeout | null>(null);
+  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const completionTimeout = useRef<NodeJS.Timeout | null>(null);
+  const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastNavigationRef = useRef<string>('');
+  
+  // Clear all timers
+  const clearAllTimers = useCallback(() => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
+    }
+    if (completionTimeout.current) {
+      clearTimeout(completionTimeout.current);
+      completionTimeout.current = null;
+    }
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
+    }
+  }, []);
 
-  const startNavigation = () => {
-    if (progressInterval) clearInterval(progressInterval);
+  const startNavigation = useCallback(() => {
+    // Generate a key for this navigation attempt
+    const currentNavigation = `${pathname}?${searchParams?.toString() || ''}`;
+    
+    // If navigating to the same URL, don't show progress
+    if (currentNavigation === lastNavigationRef.current) {
+      return;
+    }
+    
+    // Save this navigation attempt
+    lastNavigationRef.current = currentNavigation;
+    
+    // Clear existing timers
+    clearAllTimers();
     
     setIsNavigating(true);
-    setProgress(0);
+    setProgress(15); // Start with a larger initial progress for immediate feedback
     
-    const interval = setInterval(() => {
+    // Use smoother progression
+    progressInterval.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) {
-          if (progressInterval) clearInterval(progressInterval);
-          return 90;
+        if (prev >= 85) {
+          if (progressInterval.current) {
+            clearInterval(progressInterval.current);
+            progressInterval.current = null;
+          }
+          return 85;
         }
-        return prev + Math.random() * 10;
+        return prev + (85 - prev) * 0.05; // Slower, more gradual increase
       });
-    }, 200);
+    }, 80);
     
-    setProgressInterval(interval);
-  };
+    // Safety timeout - if navigation doesn't complete within 5 seconds, force complete
+    navigationTimeoutRef.current = setTimeout(() => {
+      completeNavigation();
+    }, 5000);
+  }, [pathname, searchParams, clearAllTimers]);
 
-  const completeNavigation = () => {
-    if (progressInterval) clearInterval(progressInterval);
+  const completeNavigation = useCallback(() => {
+    clearAllTimers();
     
     setProgress(100);
     
-    setTimeout(() => {
+    completionTimeout.current = setTimeout(() => {
       setIsNavigating(false);
       setProgress(0);
     }, 400);
-  };
+  }, [clearAllTimers]);
 
-  // Track route changes
+  // Handle navigation events
   useEffect(() => {
+    const url = `${pathname}?${searchParams?.toString() || ''}`;
+    
+    // Skip navigation progress for same URL
+    if (url === lastNavigationRef.current && lastNavigationRef.current !== '') {
+      return;
+    }
+    
+    // First load - just store the URL without showing progress
+    if (lastNavigationRef.current === '') {
+      lastNavigationRef.current = url;
+      return;
+    }
+    
+    // Different URL - show navigation progress
     startNavigation();
     
-    // Simulate route change completion
-    const timeout = setTimeout(() => {
+    // Complete the navigation after a delay
+    setTimeout(() => {
       completeNavigation();
     }, 800);
     
-    return () => {
-      if (progressInterval) clearInterval(progressInterval);
-      clearTimeout(timeout);
-    };
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, startNavigation, completeNavigation]);
+  
+  // Clean up on unmount
+  useEffect(() => {
+    return clearAllTimers;
+  }, [clearAllTimers]);
 
   return (
     <NavigationProgressContext.Provider
@@ -82,9 +136,9 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
     >
       {children}
       {isNavigating && (
-        <div className="fixed top-0 left-0 w-full h-1 bg-zinc-200 dark:bg-zinc-700 z-[9999]">
+        <div className="fixed top-0 left-0 w-full h-0.5 bg-zinc-200 dark:bg-zinc-700 z-[9999]">
           <div
-            className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300 ease-out"
+            className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-200 ease-in-out"
             style={{ width: `${progress}%` }}
           />
         </div>
