@@ -62,9 +62,7 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
     clearAllTimers();
     
     setIsNavigating(true);
-    setProgress(15); // Start with a larger initial progress for immediate feedback
-    
-    // Use smoother progression
+    setProgress(15);
     progressInterval.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 85) {
