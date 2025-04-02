@@ -230,7 +230,7 @@ export const ServerSidebar = async ({
 				<div className="mb-2">
 					<ServerSection sectionType="bots" role={role} label="Ask Help" server={server} />
 					<div className="space-y-[2px]">
-						<ServerBot
+						<ServerMember
 							key="bot"
 							member={{
 								id: "bot",
@@ -245,7 +245,7 @@ export const ServerSidebar = async ({
 								},
 							}}
 							server={server}
-							isBot={true}
+							isFileBot={true}
 						/>
 					</div>
 				</div>

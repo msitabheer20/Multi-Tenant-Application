@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ReactNode } from 'react';
+import { useRouter, usePathname } from "next/navigation";
 
 import {
 	Form,
@@ -578,7 +579,6 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
 					Clear History
 				</button>
 			</div>
-
 
 			<div className="flex-1 flex flex-col py-4 overflow-y-auto p-8">
 				<ScrollArea className="flex flex-col-reverse mt-auto">

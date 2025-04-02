@@ -9,6 +9,7 @@ import { ModalProvider } from "@/components/providers/modal-provider";
 import { SocketProvider } from "@/components/providers/socket-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "sonner";
+import NavigationProgressProvider from "@/components/providers/navigation-progress-provider";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -47,15 +48,17 @@ export default function RootLayout({
             attribute="class"
             defaultTheme="dark"
             enableSystem={false}
-            storageKey="taskhub-theme"
+            storageKey="discord-theme"
           >
-            <SocketProvider>
-              <ModalProvider />
-              <QueryProvider>
-                <Toaster />
-                {children}
-              </QueryProvider>
-            </SocketProvider>
+            <NavigationProgressProvider>
+              <SocketProvider>
+                <ModalProvider />
+                <QueryProvider>
+                  <Toaster />
+                  {children}
+                </QueryProvider>
+              </SocketProvider>
+            </NavigationProgressProvider>
           </ThemeProvider>
         </body>
       </html>

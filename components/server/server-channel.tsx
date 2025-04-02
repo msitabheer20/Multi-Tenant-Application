@@ -6,6 +6,7 @@ import { Edit, Hash, Lock, Mic, Trash, Video } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { ModalType, useModal } from "@/hooks/use-modal-store";
+import { useNavigationProgress } from "@/components/providers/navigation-progress-provider";
 
 interface ServerChannelProps {
 	channel: Channel;
@@ -28,11 +29,13 @@ export const ServerChannel = ({
 	const { onOpen } = useModal();
 	const params = useParams();
 	const router = useRouter();
+	const { startNavigation } = useNavigationProgress();
 
 	const Icon = iconMap[channel.type];
 
 	const onClick = () => {
-		router.push(`/servers/${params?.serverId}/channels/${channel.id}`)
+		startNavigation();
+		router.push(`/servers/${params?.serverId}/channels/${channel.id}`);
 	}
 
 	const onAction = (e: React.MouseEvent, action: ModalType) => {

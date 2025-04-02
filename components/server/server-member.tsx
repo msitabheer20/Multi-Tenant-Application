@@ -2,15 +2,17 @@
 
 import { cn } from "@/lib/utils";
 import { Member, MemberRole, Profile, Server } from "@prisma/client"
-import { BotMessageSquare, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/user-avatar";
+import { useNavigationProgress } from "@/components/providers/navigation-progress-provider";
 
 interface ServerMemberProps {
     member: Member & { profile: Profile };
     server: Server
     isBot?: boolean;
     isSlackBot?: boolean;
+    isFileBot?: boolean;
 }
 
 const roleIconMap = {
@@ -23,21 +25,25 @@ export const ServerMember = ({
     member,
     server,
     isBot = false,
-    isSlackBot = false
+    isSlackBot = false,
+    isFileBot = false
 }: ServerMemberProps) => {
 
     const params = useParams();
     const router = useRouter();
+    const { startNavigation } = useNavigationProgress();
 
     const onlyServerId = !params?.memberId;
 
-    const icon = isBot
-        ? <BotMessageSquare className="h-4 w-4 ml-2 text-blue-500" />  // Show bot icon for chatbot
-        : roleIconMap[member.role];
+    const icon = roleIconMap[member.role];
 
     const onClick = () => {
+        startNavigation();
         if (isBot) {
             router.push(`/servers/${params?.serverId}/bot`);
+        }
+        else if (isFileBot) {
+            router.push(`/servers/${params?.serverId}/file-bot`);
         }
         else if (isSlackBot) {
             router.push(`/servers/${params?.serverId}/slackbot`);
