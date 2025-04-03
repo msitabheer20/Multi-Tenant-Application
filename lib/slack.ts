@@ -130,6 +130,74 @@ async function fetchSlackApi(method: string, params: Record<string, any> = {}): 
     }
 }
 
+async function getUserLunchTags(
+    userId: string,
+    channelId: string,
+    since: number
+): Promise<{ startTimestamp?: string; endTimestamp?: string }> {
+    try {
+        const sinceTimestamp = Math.floor(since / 1000); // Convert to seconds for Slack API
+
+        const response = await fetchSlackApi('conversations.history', {
+            channel: channelId,
+            oldest: sinceTimestamp.toString(),
+            limit: 1000
+        });
+
+        if (!response.ok) {
+            if (response.error === 'missing_scope') {
+                console.error('PERMISSION ERROR: The Slack bot token is missing required scopes.');
+                console.error('Required scope: channels:history');
+                console.error('Please add this scope to your Slack app in the Slack API dashboard.');
+                throw new Error(`Missing Slack permission scope. The bot needs the 'channels:history' scope to read messages.`);
+            }
+            throw new Error(`Failed to fetch channel history: ${response.error}`);
+        }
+
+        // Filter messages from this user only
+        const userMessages = response.messages.filter((msg: any) =>
+            msg.user === userId && msg.text
+        );
+
+        // Sort messages by timestamp (oldest first)
+        userMessages.sort((a: any, b: any) => parseFloat(a.ts) - parseFloat(b.ts));
+
+        // Find the first #lunchstart
+        const lunchStartMessage = userMessages.find((msg: any) =>
+            msg.text.toLowerCase().includes('#lunchstart')
+        );
+
+        // If no start message found, return empty
+        if (!lunchStartMessage) {
+            return {};
+        }
+
+        const startTimestamp = new Date(parseInt(lunchStartMessage.ts) * 1000).toISOString();
+
+        // Find the first #lunchend or #lunchover that occurs AFTER the lunchstart
+        const lunchEndMessage = userMessages.find((msg: any) => {
+            // Check if it's an end tag
+            const isEndTag = msg.text.toLowerCase().includes('#lunchend') ||
+                msg.text.toLowerCase().includes('#lunchover');
+
+            // Only count it if it's after the start tag
+            return isEndTag && parseFloat(msg.ts) > parseFloat(lunchStartMessage.ts);
+        });
+
+        // If no end message found after start, return just the start
+        if (!lunchEndMessage) {
+            return { startTimestamp };
+        }
+
+        const endTimestamp = new Date(parseInt(lunchEndMessage.ts) * 1000).toISOString();
+
+        return { startTimestamp, endTimestamp };
+    } catch (error) {
+        console.error(`Error getting lunch tags for user ${userId}:`, error);
+        throw error;
+    }
+}
+
 export async function getSlackLunchStatus(
     channelName: string,
     timeframe: "today" | "yesterday" | "this_week" = "today"
@@ -243,74 +311,6 @@ async function findChannelId(channelName: string): Promise<string | null> {
         return channel.id;
     } catch (error) {
         console.error('Error finding channel:', error);
-        throw error;
-    }
-}
-
-async function getUserLunchTags(
-    userId: string,
-    channelId: string,
-    since: number
-): Promise<{ startTimestamp?: string; endTimestamp?: string }> {
-    try {
-        const sinceTimestamp = Math.floor(since / 1000); // Convert to seconds for Slack API
-
-        const response = await fetchSlackApi('conversations.history', {
-            channel: channelId,
-            oldest: sinceTimestamp.toString(),
-            limit: 1000
-        });
-
-        if (!response.ok) {
-            if (response.error === 'missing_scope') {
-                console.error('PERMISSION ERROR: The Slack bot token is missing required scopes.');
-                console.error('Required scope: channels:history');
-                console.error('Please add this scope to your Slack app in the Slack API dashboard.');
-                throw new Error(`Missing Slack permission scope. The bot needs the 'channels:history' scope to read messages.`);
-            }
-            throw new Error(`Failed to fetch channel history: ${response.error}`);
-        }
-
-        // Filter messages from this user only
-        const userMessages = response.messages.filter((msg: any) =>
-            msg.user === userId && msg.text
-        );
-
-        // Sort messages by timestamp (oldest first)
-        userMessages.sort((a: any, b: any) => parseFloat(a.ts) - parseFloat(b.ts));
-
-        // Find the first #lunchstart
-        const lunchStartMessage = userMessages.find((msg: any) =>
-            msg.text.toLowerCase().includes('#lunchstart')
-        );
-
-        // If no start message found, return empty
-        if (!lunchStartMessage) {
-            return {};
-        }
-
-        const startTimestamp = new Date(parseInt(lunchStartMessage.ts) * 1000).toISOString();
-
-        // Find the first #lunchend or #lunchover that occurs AFTER the lunchstart
-        const lunchEndMessage = userMessages.find((msg: any) => {
-            // Check if it's an end tag
-            const isEndTag = msg.text.toLowerCase().includes('#lunchend') ||
-                msg.text.toLowerCase().includes('#lunchover');
-
-            // Only count it if it's after the start tag
-            return isEndTag && parseFloat(msg.ts) > parseFloat(lunchStartMessage.ts);
-        });
-
-        // If no end message found after start, return just the start
-        if (!lunchEndMessage) {
-            return { startTimestamp };
-        }
-
-        const endTimestamp = new Date(parseInt(lunchEndMessage.ts) * 1000).toISOString();
-
-        return { startTimestamp, endTimestamp };
-    } catch (error) {
-        console.error(`Error getting lunch tags for user ${userId}:`, error);
         throw error;
     }
 }

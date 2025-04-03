@@ -84,7 +84,7 @@ export const EditServerModal = () => {
 
 	return (
 		<Dialog open={isModalOpen} onOpenChange={handleClose}>
-			<DialogContent className="bg-white text-black p-0 overflow-hidden">
+			<DialogContent className="bg-white dark:bg-black dark:text-zinc-300 text-black p-0 overflow-hidden">
 				<DialogHeader className="pt-8 px-6">
 					<DialogTitle className="text-2xl text-center font-bold">
 						Customize your server
@@ -121,7 +121,7 @@ export const EditServerModal = () => {
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel
-											className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70"
+											className="uppercase text-xs font-bold text-zinc-500 dark:text-zinc-300"
 										>
 											Server Name
 										</FormLabel>
@@ -129,7 +129,7 @@ export const EditServerModal = () => {
 										<FormControl>
 											<Input
 												disabled={isLoading}
-												className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+												className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black/80 focus-visible:ring-offset-0 font-bold"
 												placeholder="Enter Organization Name"
 												{...field}
 											/>
@@ -139,7 +139,7 @@ export const EditServerModal = () => {
 								)}
 							/>
 						</div>
-						<DialogFooter className="bg-gray-100 px-6 py-4">
+						<DialogFooter className="bg-gray-100 dark:bg-black dark:text-zinc-300 px-6 py-4">
 							<Button variant="primary" disabled={isLoading}>
 								Save
 							</Button>

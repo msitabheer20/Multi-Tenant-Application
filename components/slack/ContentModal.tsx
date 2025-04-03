@@ -8,8 +8,8 @@ interface ContentModalProps {
 
 export const ContentModal: React.FC<ContentModalProps> = ({ content, name, onClose }) => {
   return (
-    <div className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-zinc-800/90 rounded-lg shadow-lg max-w-lg w-full mx-4 p-3 border border-zinc-200 dark:border-zinc-700">
+    <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-lg max-w-lg w-full mx-4 p-3 border border-zinc-200 dark:border-zinc-700">
         <div className="flex justify-between items-center mb-3 px-1">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <i className="fas fa-comment text-indigo-500"></i>

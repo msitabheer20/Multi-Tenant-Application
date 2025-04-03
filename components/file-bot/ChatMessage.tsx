@@ -1,5 +1,5 @@
 import React from 'react';
-import { Message } from '@/hooks/useFileBot';
+import { Message } from '@/hooks/use-file-bot';
 
 interface ChatMessageProps {
   message: Message;

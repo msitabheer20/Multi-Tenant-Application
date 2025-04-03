@@ -30,28 +30,42 @@ export const SocketProvider = ({
 }) => {
     const [socket, setSocket] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const socketInstance = new (ClientIO as any)(process.env.NEXT_PUBLIC_SITE_URL!, {
-            path: "/api/socket/io",
-            addTrailingSlash: false,
-        });
+        // Delay socket initialization to improve initial load time
+        const initializeSocket = () => {
+            if (isInitialized) return;
 
-        socketInstance.on("connect", () => {
-            setIsConnected(true);
-        });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const socketInstance = new (ClientIO as any)(process.env.NEXT_PUBLIC_SITE_URL!, {
+                path: "/api/socket/io",
+                addTrailingSlash: false,
+            });
 
-        socketInstance.on("disconnect", () => {
-            setIsConnected(false);
-        });
+            socketInstance.on("connect", () => {
+                setIsConnected(true);
+            });
 
-        setSocket(socketInstance);
+            socketInstance.on("disconnect", () => {
+                setIsConnected(false);
+            });
+
+            setSocket(socketInstance);
+            setIsInitialized(true);
+        };
+
+        // Delay socket initialization to prioritize UI rendering
+        const timer = setTimeout(initializeSocket, 500);
 
         return () => {
-            socketInstance.disconnect();
+            clearTimeout(timer);
+            if (socket) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (socket as any).disconnect();
+            }
         }
-    }, []);
+    }, [isInitialized, socket]);
 
     return (
         <SocketContext.Provider value={{ socket, isConnected }}>

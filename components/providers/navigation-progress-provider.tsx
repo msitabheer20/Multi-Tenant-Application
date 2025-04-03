@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 interface NavigationProgressContextType {
   isNavigating: boolean;
@@ -20,7 +20,6 @@ const NavigationProgressContext = createContext<NavigationProgressContextType>({
 export const useNavigationProgress = () => useContext(NavigationProgressContext);
 
 export const NavigationProgressProvider = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -47,74 +46,80 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
   }, []);
 
   const startNavigation = useCallback(() => {
-    // Generate a key for this navigation attempt
-    const currentNavigation = `${pathname}?${searchParams?.toString() || ''}`;
-    
-    // If navigating to the same URL, don't show progress
-    if (currentNavigation === lastNavigationRef.current) {
-      return;
-    }
-    
-    // Save this navigation attempt
-    lastNavigationRef.current = currentNavigation;
-    
-    // Clear existing timers
     clearAllTimers();
     
     setIsNavigating(true);
-    setProgress(15);
+    setProgress(10); // Start at a lower percentage for a more visible progression
+    
+    // Use a logarithmic growth pattern for smoother progression
+    // Start with small increments and gradually increase
+    let increment = 2;
     progressInterval.current = setInterval(() => {
       setProgress((prev) => {
+        // Gradually slow down as we approach 85%
+        if (prev >= 75) {
+          increment = 0.5;
+        } else if (prev >= 50) {
+          increment = 1;
+        } else if (prev >= 30) {
+          increment = 1.5;
+        }
+        
         if (prev >= 85) {
           if (progressInterval.current) {
             clearInterval(progressInterval.current);
-            progressInterval.current = null;
           }
           return 85;
         }
-        return prev + (85 - prev) * 0.05; // Slower, more gradual increase
+        return prev + increment;
       });
-    }, 80);
+    }, 200); // Longer interval for slower updates
     
-    // Safety timeout - if navigation doesn't complete within 5 seconds, force complete
+    // Longer safety timeout for the slower progression
     navigationTimeoutRef.current = setTimeout(() => {
       completeNavigation();
-    }, 5000);
-  }, [pathname, searchParams, clearAllTimers]);
+    }, 6000);
+  }, [clearAllTimers]);
 
   const completeNavigation = useCallback(() => {
     clearAllTimers();
     
-    setProgress(100);
+    // Smooth transition to 100%
+    setProgress(90);
+    setTimeout(() => {
+      setProgress(100);
+    }, 100);
     
     completionTimeout.current = setTimeout(() => {
       setIsNavigating(false);
       setProgress(0);
-    }, 400);
+    }, 500); // Longer completion animation for smoother fade-out
   }, [clearAllTimers]);
 
-  // Handle navigation events
+  // Handle navigation events with debouncing
   useEffect(() => {
+    // Skip initial render navigation
+    if (!lastNavigationRef.current) {
+      lastNavigationRef.current = `${pathname}?${searchParams?.toString() || ''}`;
+      return;
+    }
+    
     const url = `${pathname}?${searchParams?.toString() || ''}`;
     
     // Skip navigation progress for same URL
-    if (url === lastNavigationRef.current && lastNavigationRef.current !== '') {
+    if (url === lastNavigationRef.current) {
       return;
     }
     
-    // First load - just store the URL without showing progress
-    if (lastNavigationRef.current === '') {
-      lastNavigationRef.current = url;
-      return;
-    }
+    // Different URL - update ref first
+    lastNavigationRef.current = url;
     
-    // Different URL - show navigation progress
     startNavigation();
     
-    // Complete the navigation after a delay
+    // Complete the navigation after a longer delay for smoother appearance
     setTimeout(() => {
       completeNavigation();
-    }, 800);
+    }, 1200);
     
   }, [pathname, searchParams, startNavigation, completeNavigation]);
   
@@ -136,7 +141,7 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
       {isNavigating && (
         <div className="fixed top-0 left-0 w-full h-0.5 bg-zinc-200 dark:bg-zinc-700 z-[9999]">
           <div
-            className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-200 ease-in-out"
+            className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>

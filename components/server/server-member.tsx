@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Member, MemberRole, Profile, Server } from "@prisma/client"
 import { ShieldCheck } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/user-avatar";
 import { useNavigationProgress } from "@/components/providers/navigation-progress-provider";
 
@@ -31,9 +31,16 @@ export const ServerMember = ({
 
     const params = useParams();
     const router = useRouter();
+    const pathname = usePathname();
     const { startNavigation } = useNavigationProgress();
 
     const onlyServerId = !params?.memberId;
+    
+    // Check if we're on a bot-related page
+    const isOnBotPage = pathname?.includes('/bot') && isBot;
+    const isOnFileBot = pathname?.includes('/file-bot') && isFileBot;
+    const isOnSlackBot = pathname?.includes('/slackbot') && isSlackBot;
+    const isActive = isOnBotPage || isOnFileBot || isOnSlackBot || params?.memberId === member.id;
 
     const icon = roleIconMap[member.role];
 
@@ -53,12 +60,14 @@ export const ServerMember = ({
         }
     }
 
+    console.log(member.profile.imageUrl);
+
     return (
         <button
             onClick={onClick}
             className={cn(
                 "group px-2 py-2 rounded-md flex items-center gap-x-2 w-full hover:bg-zinc-700/10 dark:hover:bg-zinc-700/50 transition mb-1",
-                (params?.memberId === member.id) && "bg-zinc-700/20 dark:bg-zinc-700"
+                isActive && "bg-zinc-700/20 dark:bg-zinc-700"
             )}
         >
             <UserAvatar
@@ -68,11 +77,10 @@ export const ServerMember = ({
             <p
                 className={cn(
                     "font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition",
-                    (params?.memberId === member.id || onlyServerId) && "text-primary dark:text-zinc-200 dark:group-hover:text-white",
-
+                    (isActive || onlyServerId) && "text-primary dark:text-zinc-200 dark:group-hover:text-white",
                 )}
             >
-                {isBot ? "AI Assistant" : member.profile?.name}
+                {isBot ? "AI Assistant" : isFileBot ? "File Assistant" : isSlackBot ? "Slack Bot" : member.profile?.name}
             </p>
             {icon}
         </button>

@@ -15,6 +15,10 @@ interface ChannelIdPageProps {
 const ChannelIdPage = async ({
     params
 }: ChannelIdPageProps) => {
+    // Resolve params before using them
+    const resolvedParams = await Promise.resolve(params);
+    const serverId = resolvedParams.serverId;
+    const channelId = resolvedParams.channelId;
 
     const profile = await currentProfile();
 
@@ -24,13 +28,13 @@ const ChannelIdPage = async ({
 
     const channel = await db.channel.findUnique({
         where: {
-            id: params.channelId,
+            id: channelId,
         }
     })
 
     const member = await db.member.findFirst({
         where: {
-            serverId: params.serverId,
+            serverId: serverId,
             profileId: profile.id,
         }
     })

@@ -74,20 +74,20 @@ export const CreateServerModal = () => {
 
 	return (
 		<Dialog open={isModalOpen} onOpenChange={handleClose}>
-			<DialogContent className="bg-white text-black p-0 overflow-hidden">
+			<DialogContent className="bg-white dark:bg-black dark:text-zinc-300 text-black/80 p-0 overflow-hidden">
 				<DialogHeader className="pt-8 px-6">
 					<DialogTitle className="text-2xl text-center font-bold">
 						Customize your server
 					</DialogTitle>
-					<DialogDescription className="text-center text-zinc-500">
+					<DialogDescription className="text-center text-zinc-500 dark:text-zinc-400">
 						Give your server a personality with a name and an image. You can always change it later.
 					</DialogDescription>
 				</DialogHeader>
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 ">
-						<div className="container space-y-8 px-6">
-							<div className="container flex items-center justify-center text-center ">
+						<div className="space-y-8 px-6">
+							<div className="flex items-center justify-center text-center">
 								<FormField
 									control={form.control}
 									name="imageUrl"
@@ -111,7 +111,7 @@ export const CreateServerModal = () => {
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel
-											className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70"
+											className="uppercase text-xs font-bold text-zinc-500 dark:text-zinc-300"
 										>
 											Server Name
 										</FormLabel>
@@ -119,7 +119,7 @@ export const CreateServerModal = () => {
 										<FormControl>
 											<Input
 												disabled={isLoading}
-												className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+												className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black/80 focus-visible:ring-offset-0 font-bold"
 												placeholder="Enter Organization Name"
 												{...field}
 											/>
@@ -129,7 +129,7 @@ export const CreateServerModal = () => {
 								)}
 							/>
 						</div>
-						<DialogFooter className="bg-gray-100 px-6 py-4">
+						<DialogFooter className="bg-gray-100 dark:bg-black dark:text-zinc-300 px-6 py-4">
 							<Button variant="primary" disabled={isLoading}>
 								Create
 							</Button>

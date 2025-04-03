@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/user-avatar";
-import { useBot } from '@/hooks/useBot';
+import { useBot } from '@/hooks/use-bot';
 import { ChatMessageItem } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 

@@ -10,7 +10,7 @@ interface ServerSectionProps {
  label: string;
  role: MemberRole;
  sectionType: "channels" | "members" | "bots";
- channelType: ChannelType;
+ channelType?: ChannelType;
  server?: ServerWithMembersWithProfiles;
 };
 
@@ -46,16 +46,6 @@ export const ServerSection = ({
       className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300 transition"
      >
       <Settings className="h-4 w-4" />
-     </button>
-    </ActionTooltip>
-   )}
-   {role === MemberRole.ADMIN && sectionType === "bots" && (
-    <ActionTooltip label="Create Bot" side="top">
-     <button
-      onClick={() => onOpen("createChatBot", { server })}
-      className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300 transition"
-     >
-      {/* <Plus className="h-4 w-4" /> */}
      </button>
     </ActionTooltip>
    )}

@@ -15,4 +15,4 @@ const SlackBotPage = ({ params }: SlackBotPageProps) => {
   return <SlackBotUI />;
 }
 
-export default SlackBotPage; 
+export default SlackBotPage;

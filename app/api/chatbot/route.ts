@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-  });
+});
 
 const availableFunctions = {
 	setTheme: {
@@ -105,9 +105,7 @@ export async function POST(req: Request) {
 			);
 		}
 
-		let systemPrompt = '';
-
-		systemPrompt = `You are a helpful AI assistant. Provide clear, concise, and accurate answers to the user's questions. 
+		let systemPrompt = `You are a helpful AI assistant. Provide clear, concise, and accurate answers to the user's questions. 
     If you're not sure about something, say so. Be friendly and professional in your responses.
     
     You also have the ability to control the theme of the application. If the user asks to change the theme (light/dark), use the setTheme function.

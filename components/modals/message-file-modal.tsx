@@ -76,12 +76,12 @@ export const MessageFileModal = () => {
 
 	return (
 		<Dialog open={isModalOpen} onOpenChange={handleClose}>
-			<DialogContent className="bg-white text-black p-0 overflow-hidden">
+			<DialogContent className="bg-white dark:bg-black dark:text-zinc-300 text-black p-0 overflow-hidden">
 				<DialogHeader className="pt-8 px-6">
 					<DialogTitle className="text-2xl text-center font-bold">
 						Add an attachment
 					</DialogTitle>
-					<DialogDescription className="text-center text-zinc-500">
+					<DialogDescription className="text-center text-zinc-500 dark:text-zinc-400">
 						Send a file as a message
 					</DialogDescription>
 				</DialogHeader>
@@ -107,7 +107,7 @@ export const MessageFileModal = () => {
 								/>
 							</div>
 						</div>
-						<DialogFooter className="bg-gray-100 px-6 py-4">
+						<DialogFooter className="bg-gray-100 dark:bg-black dark:text-zinc-300 px-6 py-4">
 							<Button variant="primary" disabled={isLoading}>
 								Send
 							</Button>

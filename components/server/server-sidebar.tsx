@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { ServerSection } from "./server-section";
 import { ServerChannel } from "./server-channel";
 import { ServerMember } from "./server-member";
-import { ServerBot } from "./server-bot";
 
 interface ServerSidebarProps {
 	serverId: string,
@@ -129,7 +128,7 @@ export const ServerSidebar = async ({
 						<ServerSection
 							sectionType="channels"
 							channelType={ChannelType.TEXT}
-							role={role}
+							role={role as MemberRole}
 							label="Text Channels"
 						/>
 						<div className="space-y-[2px]">
@@ -137,7 +136,7 @@ export const ServerSidebar = async ({
 								<ServerChannel
 									key={channel.id}
 									channel={channel}
-									role={role}
+									role={role as MemberRole}
 									server={server}
 								/>
 							))}
@@ -149,7 +148,7 @@ export const ServerSidebar = async ({
 						<ServerSection
 							sectionType="channels"
 							channelType={ChannelType.AUDIO}
-							role={role}
+							role={role as MemberRole}
 							label="Voice Channels"
 						/>
 						<div className="space-y-[2px]">
@@ -157,7 +156,7 @@ export const ServerSidebar = async ({
 								<ServerChannel
 									key={channel.id}
 									channel={channel}
-									role={role}
+									role={role as MemberRole}
 									server={server}
 								/>
 							))}
@@ -169,7 +168,7 @@ export const ServerSidebar = async ({
 						<ServerSection
 							sectionType="channels"
 							channelType={ChannelType.VIDEO}
-							role={role}
+							role={role as MemberRole}
 							label="Video Channels"
 						/>
 						<div className="space-y-[2px]">
@@ -177,7 +176,7 @@ export const ServerSidebar = async ({
 								<ServerChannel
 									key={channel.id}
 									channel={channel}
-									role={role}
+									role={role as MemberRole}
 									server={server}
 								/>
 							))}
@@ -188,7 +187,7 @@ export const ServerSidebar = async ({
 					<div className="mb-2">
 						<ServerSection
 							sectionType="members"
-							role={role}
+							role={role as MemberRole}
 							label="Members"
 							server={server}
 						/>
@@ -205,12 +204,22 @@ export const ServerSidebar = async ({
 				)}
 
 				<div className="mb-2">
-					<ServerSection sectionType="bots" role={role} label="Talk with Bot" server={server} />
+					<ServerSection 
+					sectionType="bots" 
+					role={role as MemberRole} 
+					label="Talk with Bot" 
+					server={server} 
+					/>
 					<div className="space-y-[2px]">
 						<ServerMember
 							key="bot"
 							member={{
 								id: "bot",
+								profileId: "bot-profile",
+								createdAt: new Date(),
+								updatedAt: new Date(),
+								role: MemberRole.GUEST,
+								serverId: server.id,
 								profile: {
 									id: "bot-profile",
 									name: "AI Assistant",
@@ -228,12 +237,22 @@ export const ServerSidebar = async ({
 				</div>
 
 				<div className="mb-2">
-					<ServerSection sectionType="bots" role={role} label="Ask Help" server={server} />
+					<ServerSection 
+					sectionType="bots" 
+					role={role as MemberRole} 
+					label="Ask Help" 
+					server={server} 
+					/>
 					<div className="space-y-[2px]">
 						<ServerMember
 							key="bot"
 							member={{
 								id: "bot",
+								profileId: "bot-profile",
+								createdAt: new Date(),
+								updatedAt: new Date(),
+								role: MemberRole.GUEST,
+								serverId: server.id,
 								profile: {
 									id: "bot-profile",
 									name: "File Assistant",
@@ -251,12 +270,22 @@ export const ServerSidebar = async ({
 				</div>
 
 				<div className="mb-2">
-					<ServerSection sectionType="bots" role={role} label="Ask Help" server={server} />
+					<ServerSection 
+					sectionType="bots" 
+					role={role as MemberRole} 
+					label="Ask Help" 
+					server={server} 
+					/>
 					<div className="space-y-[2px]">
 						<ServerMember
 							key="bot"
 							member={{
 								id: "bot",
+								profileId: "bot-profile",
+								createdAt: new Date(),
+								updatedAt: new Date(),
+								role: MemberRole.GUEST,
+								serverId: server.id,
 								profile: {
 									id: "bot-profile",
 									name: "Slack Assistant",

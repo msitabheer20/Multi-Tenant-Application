@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/user-avatar";
-import { useFileBot } from '@/hooks/useFileBot';
+import { useFileBot } from '@/hooks/use-file-bot';
 import { ChatMessageItem } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import FileUploadModal from '@/components/chat/chat-file-upload';
