@@ -2,9 +2,12 @@
 import { useChat } from "@ai-sdk/react";
 import { UserAvatar } from "@/components/user-avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Image from "next/image";
+import { FileIcon } from "lucide-react";
+import { Edit, Trash } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const ChatBotMessage = () => {
-
  const { messages, input, handleInputChange, handleSubmit, reload, error } = useChat({ api: "/api/chatbot" });
 
  return (
@@ -33,133 +36,59 @@ export const ChatBotMessage = () => {
      }
 
      {
-      messages?.map((message, index) => (
-       <div key={index} className={`mb-4`}
-       >
-        <div className="relative group flex items-center hover:bg-black/5 p-4 transition w-full">
-         <div className="group flex gap-x-2 items-start w-full">
-          <div className="cursor-pointer hover:drop-shadow-md transition">
-           <UserAvatar src={member.profile.imageUrl} />
-          </div>
-          <div className="flex flex-col w-full">
-           <div className="flex items-center gap-x-2">
-            <div className="flex items-center">
-             <p className="font-semibold text-sm hover:underline cursor-pointer">
-              {member.profile.name}
-             </p>
-             <ActionTooltip label={member.role}>
-              {roleIconMap[member.role]}
-             </ActionTooltip>
-            </div>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-             {timestamp}
-            </span>
-           </div>
-           {isImage && (
-            <a
-             href={fileUrl}
-             target="_blank"
-             rel="noopener noreferrer"
-             className="relative aspect-square rounded-md mt-2 overflow-hidden border flex items-center bg-secondary h-48 w-48"
-            >
-             <Image
-              src={fileUrl}
-              alt={content}
-              fill
-              className="object-cover"
-             />
-            </a>
-           )}
-           {
-            isPDF && (
-             <div className="relative flex items-center p-2 mt-2 rounded-md bg-background/10" >
-              <FileIcon className="h-10 w-10 fill-indigo-200 stroke-indigo-400" />
-              <a
-               href={fileUrl}
-               target="_blank"
-               rel="noopener noreferrer"
-               className="ml-2 text-sm text-indigo-500 dark:text-indigo-400 hover:underline"
-              >
-               PDF File
-              </a>
-             </div >
-            )
-           }
-           {!fileUrl && !isEditing && (
-            <p className={cn(
-             "text-sm text-zinc-600 dark:text-zinc-300",
-             deleted && "italic text-zinc-500 dark:text-zinc-400 text-xs mt-1"
-            )}>
-             {content}
-             {isUpdated && !deleted && (
-              <span className="text-[10px] mx-2 text-zinc-500 dark:text-zinc-400">
-               (edited)
-              </span>
-             )}
-            </p>
-           )}
-           {!fileUrl && isEditing && (
-            <Form {...form}>
-             <form
-              className="flex items-center w-full gap-x-2 pt-2"
-              onSubmit={form.handleSubmit(onSubmit)}
-             >
-              <FormField
-               control={form.control}
-               name="content"
-               render={({ field }) => (
-                <FormItem className="flex-1">
-                 <FormControl>
-                  <div className="relative w-full">
-                   <Input
-                    disabled={isLoading}
-                    className="p-2 bg-zinc-200/90 dark:bg-zinc-700/75 border-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-200"
-                    placeholder="Edited message"
-                    {...field}
-                   />
+      messages?.map((message, index) => {
+        const isUserMessage = message.role === 'user';
+        return (
+          <div key={index} className="mb-4">
+            <div className="relative group flex items-center hover:bg-black/5 p-4 transition w-full">
+              <div className="group flex gap-x-2 items-start w-full">
+                <div className="cursor-pointer hover:drop-shadow-md transition">
+                  <UserAvatar 
+                    src={isUserMessage ? "/placeholder-user.jpg" : "https://cdn-1.webcatalog.io/catalog/discord-bot-list/discord-bot-list-icon-filled-256.png?v=1714774149420"} 
+                  />
+                </div>
+                <div className="flex flex-col w-full">
+                  <div className="flex items-center gap-x-2">
+                    <div className="flex items-center">
+                      <p className="font-semibold text-sm hover:underline cursor-pointer">
+                        {isUserMessage ? "You" : "AI Assistant"}
+                      </p>
+                    </div>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {new Date().toLocaleTimeString()}
+                    </span>
                   </div>
-                 </FormControl>
-                </FormItem>
-               )}
-              />
-              <Button disabled={isLoading} size="sm" variant="primary">
-               Save
-              </Button>
-             </form>
-             <span className="text-[10px] mt-1 text-zinc-400">
-              Press escape to cancel, enter to save
-             </span>
-            </Form>
-           )}
+                  <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                    {message.content}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-         </div>
-         {canDeleteMessage && (
-          <div className="hidden group-hover:flex items-center gap-x-2 absolute p-1 -top-2 right-5 bg-white dark:bg-zinc-800 border rounded-sm">
-           {canEditMessage && (
-            <ActionTooltip label="Edit">
-             <Edit
-              onClick={() => setIsEditing(true)}
-              className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
-             />
-            </ActionTooltip>
-           )}
-           <ActionTooltip label="Delete">
-            <Trash
-             onClick={() => onOpen("deleteMessage", {
-              apiUrl: `${socketUrl}/${id}`,
-              query: socketQuery,
-             })}
-             className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
-            />
-           </ActionTooltip>
-          </div>
-         )}
-        </div>
-       </div>
-      ))
+        );
+      })
      }
     </ScrollArea>
    </div>
+
+   {/* Chat Input */}
+   <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 dark:border-gray-700">
+    <div className="flex items-center gap-2">
+     <input
+      type="text"
+      value={input}
+      onChange={handleInputChange}
+      placeholder="Type a message..."
+      className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-2 text-sm text-gray-900 dark:text-gray-100"
+     />
+     <button
+      type="submit"
+      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+     >
+      Send
+     </button>
+    </div>
+   </form>
   </div>
  )
 }

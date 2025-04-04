@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export const NavigationProgress = () => {
+const NavigationProgressContent = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -58,6 +58,14 @@ export const NavigationProgress = () => {
         style={{ width: `${progress}%` }}
       />
     </div>
+  );
+};
+
+export const NavigationProgress = () => {
+  return (
+    <Suspense fallback={null}>
+      <NavigationProgressContent />
+    </Suspense>
   );
 };
 

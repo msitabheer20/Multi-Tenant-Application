@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 interface NavigationProgressContextType {
@@ -19,7 +19,8 @@ const NavigationProgressContext = createContext<NavigationProgressContextType>({
 
 export const useNavigationProgress = () => useContext(NavigationProgressContext);
 
-export const NavigationProgressProvider = ({ children }: { children: React.ReactNode }) => {
+// Separate component to use search params inside Suspense
+const NavigationProgressContent = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -135,6 +136,14 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
         </div>
       )}
     </NavigationProgressContext.Provider>
+  );
+};
+
+export const NavigationProgressProvider = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Suspense fallback={null}>
+      <NavigationProgressContent children={children} />
+    </Suspense>
   );
 };
 

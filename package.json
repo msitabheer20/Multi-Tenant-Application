@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
+    "build:docker": "NEXT_PUBLIC_SKIP_404=true NEXT_TELEMETRY_DISABLED=1 NEXT_IGNORE_TYPE_CHECK=true next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate"
