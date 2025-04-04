@@ -20,7 +20,6 @@ export function useSlackBot(): UseSlackBotProps {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedContent, setSelectedContent] = useState<{ content: string, name: string } | null>(null);
 
-  // Add effect to log messages when they change
   useEffect(() => {
     console.log("Messages updated:", messages);
   }, [messages]);
@@ -73,7 +72,6 @@ export function useSlackBot(): UseSlackBotProps {
       const data = await response.json();
       console.log('Success response data:', data);
 
-      // Check if the response contains an error message
       if (data.error || (data.content && data.content.includes('I encountered an error'))) {
         setMessages(prev => [
           ...prev,
@@ -87,11 +85,9 @@ export function useSlackBot(): UseSlackBotProps {
         return;
       }
 
-      // Handle Slack Lunch Status response
       if (data.functionCall && data.functionCall.name === 'getSlackLunchStatus') {
         const result = data.functionCall.result as SlackLunchReport;
         
-        // Check if we have a valid result with users before continuing
         if (!result || !result.users) {
           setMessages(prev => [
             ...prev,
@@ -105,15 +101,12 @@ export function useSlackBot(): UseSlackBotProps {
           return;
         }
         
-        // Process lunch status data and update messages
         handleLunchStatusResponse(result);
       }
       
-      // Handle Slack Update Status response
       else if (data.functionCall && data.functionCall.name === 'getSlackUpdateStatus') {
         const result = data.functionCall.result as SlackUpdateReport;
         
-        // Check if we have a valid result with users before continuing
         if (!result || !result.users) {
           setMessages(prev => [
             ...prev,
@@ -127,15 +120,12 @@ export function useSlackBot(): UseSlackBotProps {
           return;
         }
         
-        // Process update status data and update messages
         handleUpdateStatusResponse(result);
       }
       
-      // Handle Slack Report Status response
       else if (data.functionCall && data.functionCall.name === 'getSlackReportStatus') {
         const result = data.functionCall.result as SlackReportStatusReport;
         
-        // Check if we have a valid result with users before continuing
         if (!result || !result.users) {
           setMessages(prev => [
             ...prev,
@@ -149,11 +139,9 @@ export function useSlackBot(): UseSlackBotProps {
           return;
         }
         
-        // Process report status data and update messages
         handleReportStatusResponse(result);
       }
       
-      // Handle normal text response
       else {
         setMessages(prev => [
           ...prev,
@@ -168,7 +156,6 @@ export function useSlackBot(): UseSlackBotProps {
     } catch (error) {
       console.error('Full error details:', error);
       
-      // Determine the error message
       let errorMessage = 'An error occurred while processing your request.';
       
       if (error instanceof Error) {
@@ -192,7 +179,6 @@ export function useSlackBot(): UseSlackBotProps {
   const handleLunchStatusResponse = (result: SlackLunchReport) => {
     console.log("Lunch status result users:", result.users);
     
-    // Add the customContent to messages (the actual table component will be added by the main component)
     setMessages(prev => [
       ...prev,
       {
@@ -206,7 +192,6 @@ export function useSlackBot(): UseSlackBotProps {
   };
 
   const handleUpdateStatusResponse = (result: SlackUpdateReport) => {
-    // Add the customContent to messages (the actual table component will be added by the main component)
     setMessages(prev => [
       ...prev,
       {
@@ -220,7 +205,6 @@ export function useSlackBot(): UseSlackBotProps {
   };
 
   const handleReportStatusResponse = (result: SlackReportStatusReport) => {
-    // Add the customContent to messages (the actual table component will be added by the main component)
     setMessages(prev => [
       ...prev,
       {

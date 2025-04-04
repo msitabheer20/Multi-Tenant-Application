@@ -12,7 +12,6 @@ const handleAuth = async() => {
     return { userId: userId}
 }
 
-// FileRouter for your app, can contain multiple FileRoutes
 export const ourFileRouter = {
     serverImage: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
         .middleware(() => handleAuth())

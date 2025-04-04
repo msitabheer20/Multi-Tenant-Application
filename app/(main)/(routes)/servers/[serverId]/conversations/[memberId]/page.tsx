@@ -16,7 +16,7 @@ interface MemberIdPageProps {
 const MemberIdPage = async ({
     params
 }: MemberIdPageProps) => {
-    // Resolve params before using them
+
     const resolvedParams = await Promise.resolve(params);
     const serverId = resolvedParams.serverId;
     const memberId = resolvedParams.memberId;

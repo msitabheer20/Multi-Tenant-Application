@@ -32,14 +32,12 @@ export function useBot(serverId: string): UseBotProps {
   const { setTheme } = useTheme();
   const router = useRouter();
 
-  // Save messages to localStorage when they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(`bot-chat-messages-${serverId}`, JSON.stringify(messages));
     }
   }, [messages, serverId]);
 
-  // Add effect to log messages when they change
   useEffect(() => {
     console.log("Messages updated:", messages);
   }, [messages]);
@@ -92,7 +90,6 @@ export function useBot(serverId: string): UseBotProps {
         setTheme(newTheme);
         toast.success(`Theme changed to ${newTheme} mode`);
         
-        // Add message about the theme change
         setMessages(prev => [
           ...prev,
           {
@@ -110,7 +107,6 @@ export function useBot(serverId: string): UseBotProps {
         ]);
       } 
       else if (data.functionCall && data.functionCall.name === 'createServer') {
-        // Handle server creation function
         const { name, imageUrl } = data.functionCall.arguments;
         
         try {
@@ -356,7 +352,6 @@ export function useBot(serverId: string): UseBotProps {
         }
       }
       else {
-        // Normal message
         setMessages(prev => [
           ...prev,
           {

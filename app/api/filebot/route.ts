@@ -19,8 +19,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Function to split text into chunks
-
 export async function POST(req: Request) {
   try {
     const { message, files } = await req.json();
@@ -41,7 +39,6 @@ export async function POST(req: Request) {
       // console.log('Number of files:', files.length);
       // console.log('File IDs:', files.map((f: FileData) => f.id));
 
-      // Verify document storage before querying
       for (const file of files) {
         if (!file.id) {
           console.error(`File ${file.name} has no ID`);
@@ -51,7 +48,6 @@ export async function POST(req: Request) {
         // console.log(`Found ${vectorCount} vectors for file ${file.name}`);
       }
 
-      // Get relevant chunks from Pinecone for each file
       const relevantChunks = await Promise.all(
         files.map(async (file: FileData) => {
           try {
@@ -70,7 +66,6 @@ export async function POST(req: Request) {
         })
       );
 
-      // Filter out empty chunks and combine the rest
       context = relevantChunks.filter(chunk => chunk.trim()).join('\n\n');
 
       // console.log('\n=== Context Details ===');
@@ -83,7 +78,6 @@ export async function POST(req: Request) {
 
       if (!context.trim()) {
         // console.log('\nNo relevant context found for the query');
-        // Instead of returning an error, provide a helpful response
         systemPrompt = `You are a helpful AI assistant. The user has uploaded documents but their question doesn't match any specific content in those documents. 
         Please respond in a helpful way, suggesting that they:
         1. Try rephrasing their question
@@ -101,7 +95,6 @@ export async function POST(req: Request) {
     } else {
       // console.log('\n=== Processing Basic Chat ===');
       // console.log('Message:', message);
-      // Basic chat without documents
       systemPrompt = `You are a helpful AI assistant. Provide clear, concise, and accurate answers to the user's questions. 
       If you're not sure about something, say so. Be friendly and professional in your responses.`;
     }
@@ -110,7 +103,6 @@ export async function POST(req: Request) {
     // console.log('Prompt length:', systemPrompt.length);
     // console.log('Prompt preview:', systemPrompt.substring(0, 200) + '...');
 
-    // Get response from OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [

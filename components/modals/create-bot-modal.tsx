@@ -56,7 +56,7 @@ export const CreateBotModal = () => {
 	const onSubmit = async (values: z.infer<typeof formSchema>) => {
 		try {
 			const url = qs.stringifyUrl({
-				url: "/api/bots",  // Use correct API endpoint for bots
+				url: "/api/bots",
 				query: {
 					serverId: params?.serverId
 				}

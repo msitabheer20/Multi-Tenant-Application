@@ -24,15 +24,13 @@ export const SlackBotUI: React.FC = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // Render the appropriate custom content based on the message type
-  const renderCustomContent = (customContent: any) => {
+    const renderCustomContent = (customContent: any) => {
     if (!customContent || !customContent.type) return null;
 
     switch (customContent.type) {

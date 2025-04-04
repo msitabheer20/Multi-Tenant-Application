@@ -6,7 +6,6 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Define the available functions
 const availableFunctions = {
 	getSlackLunchStatus: {
 		name: "getSlackLunchStatus",
@@ -100,7 +99,6 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// Instead of returning an error, provide a helpful response
 		let systemPrompt = `You are a helpful AI assistant. The user has uploaded documents but their question doesn't match any specific content in those documents. 
         Please respond in a helpful way, suggesting that they:
         1. Try rephrasing their question
@@ -115,7 +113,7 @@ export async function POST(req: Request) {
         If the user asks about Slack update status tracking, use the getSlackUpdateStatus function to help them.
         
         If the user asks about Slack report status tracking, use the getSlackReportStatus function to help them.`;
-		// Get response from OpenAI with function calling
+
 		const completion = await openai.chat.completions.create({
 			model: 'gpt-4o',
 			messages: [
@@ -143,7 +141,6 @@ export async function POST(req: Request) {
 
 		const responseMessage = completion.choices[0].message;
 
-		// Check if the model wants to call a function
 		const toolCalls = responseMessage.tool_calls;
 		if (toolCalls) {
 			console.log('\n=== Function Call Detected ===');
@@ -157,7 +154,6 @@ export async function POST(req: Request) {
 					console.log(`Function call: getSlackLunchStatus(${channelName}, ${timeframe})`);
 
 					try {
-						// Check if Slack token is set
 						if (!process.env.SLACK_BOT_TOKEN) {
 							return NextResponse.json({
 								content: `I was unable to check the lunch status for #${channelName}. The Slack bot token is not configured.`,
@@ -165,15 +161,13 @@ export async function POST(req: Request) {
 							});
 						}
 
-						// Get actual data from the Slack utility
 						const slackData = await getSlackLunchStatus(
 							channelName,
 							timeframe as "today" | "yesterday" | "this_week"
 						);
 
-						// Return with function call information - Only use the formatted message, not the model's content
 						return NextResponse.json({
-							content: null, // No formatted content, just raw data
+							content: null,
 							functionCall: {
 								name: 'getSlackLunchStatus',
 								arguments: { channelName, timeframe },
@@ -199,7 +193,6 @@ export async function POST(req: Request) {
 					console.log(`Function call: getSlackUpdateStatus(${channelName}, ${timeframe})`);
 
 					try {
-						// Check if Slack token is set
 						if (!process.env.SLACK_BOT_TOKEN) {
 							return NextResponse.json({
 								content: `I was unable to check the update status for #${channelName}. The Slack bot token is not configured.`,
@@ -207,15 +200,13 @@ export async function POST(req: Request) {
 							});
 						}
 
-						// Get actual data from the Slack utility
 						const slackData = await getSlackUpdateStatus(
 							channelName,
 							timeframe as "today" | "yesterday" | "this_week"
 						);
 
-						// Return with function call information
 						return NextResponse.json({
-							content: null, // No formatted content, just raw data
+							content: null,
 							functionCall: {
 								name: 'getSlackUpdateStatus',
 								arguments: { channelName, timeframe },
@@ -241,7 +232,6 @@ export async function POST(req: Request) {
 					console.log(`Function call: getSlackReportStatus(${channelName}, ${timeframe})`);
 
 					try {
-						// Check if Slack token is set
 						if (!process.env.SLACK_BOT_TOKEN) {
 							return NextResponse.json({
 								content: `I was unable to check the report status for #${channelName}. The Slack bot token is not configured.`,
@@ -249,15 +239,13 @@ export async function POST(req: Request) {
 							});
 						}
 
-						// Get actual data from the Slack utility
 						const slackData = await getSlackReportStatus(
 							channelName,
 							timeframe as "today" | "yesterday" | "this_week"
 						);
 
-						// Return with function call information
 						return NextResponse.json({
-							content: null, // No formatted content, just raw data
+							content: null,
 							functionCall: {
 								name: 'getSlackReportStatus',
 								arguments: { channelName, timeframe },

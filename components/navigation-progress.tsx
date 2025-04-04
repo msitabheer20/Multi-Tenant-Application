@@ -10,12 +10,10 @@ export const NavigationProgress = () => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // When the route changes, start the progress bar
     const startProgress = () => {
       setIsNavigating(true);
       setProgress(0);
       
-      // Simulate progress
       let simulatedProgress = 0;
       const interval = setInterval(() => {
         simulatedProgress += Math.random() * 15;
@@ -29,22 +27,18 @@ export const NavigationProgress = () => {
       return interval;
     };
 
-    // Complete the progress when the route change is done
     const completeProgress = (interval: NodeJS.Timeout) => {
       clearInterval(interval);
       setProgress(100);
-      
-      // Hide the progress bar after animation completes
+
       setTimeout(() => {
         setIsNavigating(false);
         setProgress(0);
       }, 400);
     };
 
-    // Start progress immediately
     const interval = startProgress();
     
-    // After a short delay, complete the progress to simulate the page load
     const timeout = setTimeout(() => {
       completeProgress(interval);
     }, 800);

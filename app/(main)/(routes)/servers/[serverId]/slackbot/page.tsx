@@ -9,7 +9,7 @@ interface SlackBotPageProps {
 }
 
 const SlackBotPage = ({ params }: SlackBotPageProps) => {
-  // Resolve the params (necessary for use with RSC)
+
   const resolvedParams = use(params);
   
   return <SlackBotUI />;

@@ -34,7 +34,6 @@ const textSplitter = new RecursiveCharacterTextSplitter({
   separators: ['\n\n', '\n', ' ', ''],
 });
 
-// Function to create a new Pinecone index with the correct dimensions
 export async function createPineconeIndex() {
   try {
     // Delete existing index if it exists
@@ -45,17 +44,16 @@ export async function createPineconeIndex() {
       console.log('No existing index to delete');
     }
 
-    // Create new index with 1536 dimensions (OpenAI's embedding dimension)
     await pinecone.createIndex({
       name: process.env.PINECONE_INDEX_NAME!,
+      dimension: 1536,
+      metric: 'cosine',
       spec: {
         pod: {
           environment: process.env.PINECONE_ENVIRONMENT as string,
           podType: 'p1.x1',
           replicas: 1,
           shards: 1,
-          dimension: 1536,
-          metric: 'cosine',
         },
       },
     });
@@ -76,13 +74,11 @@ export async function upsertDocument(fileId: string, content: string) {
 
     const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
     
-    // Split the content into chunks
     console.log('\nSplitting content into chunks...');
     const docs = await textSplitter.createDocuments([content]);
     // console.log('Number of chunks created:', docs.length);
     // console.log('First chunk preview:', docs[0]?.pageContent.substring(0, 200) + '...');
     
-    // Create embeddings for each chunk
     console.log('\nCreating embeddings for chunks...');
     const vectors = await Promise.all(
       docs.map(async (doc: Document, i: number) => {
@@ -103,7 +99,6 @@ export async function upsertDocument(fileId: string, content: string) {
     );
 
     console.log('\nUpserting vectors to Pinecone...');
-    // Upsert to Pinecone
     await index.upsert(vectors);
     console.log('Successfully upserted vectors to Pinecone');
 
@@ -125,14 +120,12 @@ async function rerankChunks(query: string, chunks: string[], topK: number = 5) {
     // console.log('Query:', query);
     // console.log('Number of chunks to rerank:', chunks.length);
 
-    // Create pairs of query and chunks for scoring
     const pairs = chunks.map(chunk => ({
       query,
       chunk,
     }));
 
     // console.log('\nStarting scoring process for each chunk...');
-    // Score each pair using OpenAI
     const scores = await Promise.all(
       pairs.map(async ({ query, chunk }, index) => {
         // console.log(`\nScoring chunk ${index + 1}/${chunks.length}`);
@@ -165,7 +158,6 @@ async function rerankChunks(query: string, chunks: string[], topK: number = 5) {
         const response = completion.choices[0].message.content?.trim() || '0';
         // console.log('Raw OpenAI response:', response);
         
-        // Parse and validate the score
         let score = parseFloat(response);
         if (isNaN(score) || score < 0 || score > 1) {
           // console.log('Invalid score received, defaulting to 0');
@@ -188,7 +180,6 @@ async function rerankChunks(query: string, chunks: string[], topK: number = 5) {
     // console.log('\n=== Scoring Summary ===');
     // console.log('All chunks scored. Sorting by relevance...');
     
-    // Sort chunks by score and take top K
     const rerankedChunks = scores
       .sort((a, b) => b.score - a.score)
       .slice(0, topK)
@@ -205,7 +196,6 @@ async function rerankChunks(query: string, chunks: string[], topK: number = 5) {
     return rerankedChunks;
   } catch (error) {
     console.error('Error during reranking:', error);
-    // If reranking fails, return original chunks
     return chunks.slice(0, topK);
   }
 }
@@ -219,11 +209,9 @@ export async function queryPinecone(query: string, fileId: string, topK: number 
 
     const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
     
-    // Create query embedding
     const queryEmbedding = await embeddings.embedQuery(query);
     // console.log('Query embedding created, dimension:', queryEmbedding.length);
     
-    // Query Pinecone
     const queryResponse = await index.query({
       vector: queryEmbedding,
       topK: Math.max(topK * 2, 10),
@@ -249,7 +237,6 @@ export async function queryPinecone(query: string, fileId: string, topK: number 
     // }
     let matches = queryResponse.matches || [];
     
-    // If no matches found with fileId filter, try without it
     if (matches.length === 0) {
       console.log('\nNo matches found with fileId filter, trying without filter...');
       const unfilteredResponse = await index.query({
@@ -261,7 +248,6 @@ export async function queryPinecone(query: string, fileId: string, topK: number 
       console.log('Total matches found without filter:', unfilteredResponse.matches?.length || 0);
       matches = unfilteredResponse.matches || [];
       
-      // Log all matches to help debug
       if (matches.length > 0) {
         console.log('\nAll matches found:');
         matches.forEach((match, index) => {
@@ -280,7 +266,6 @@ export async function queryPinecone(query: string, fileId: string, topK: number 
 
       if (chunks.length === 0) {
         // console.log('\nNo relevant chunks found with score > 0.3');
-        // Try a more lenient search without score filtering
         const lenientChunks = matches.map((match: any) => match.metadata?.text) || [];
         console.log('All chunks found (without score filtering):', {
           numChunks: lenientChunks.length,
@@ -306,9 +291,8 @@ export async function deleteDocument(fileId: string) {
     console.log('Starting document deletion process for fileId:', fileId);
     const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
 
-    // Get all vectors for this file
     const queryResponse = await index.query({
-      vector: new Array(1536).fill(0), // Zero vector to get all matches
+      vector: new Array(1536).fill(0),
       topK: 1000,
       includeMetadata: true,
     });
@@ -318,7 +302,6 @@ export async function deleteDocument(fileId: string) {
       return;
     }
 
-    // Filter vectors by fileId in memory
     const vectorsToDelete = queryResponse.matches
       .filter(match => match.metadata?.fileId === fileId)
       .map(match => match.id);
@@ -330,14 +313,12 @@ export async function deleteDocument(fileId: string) {
 
     console.log(`Found ${vectorsToDelete.length} vectors to delete`);
 
-    // Delete vectors one at a time
     for (const id of vectorsToDelete) {
       try {
         await index.deleteOne(id);
         console.log(`Deleted vector with ID: ${id}`);
       } catch (error) {
         console.error(`Error deleting vector ${id}:`, error);
-        // Continue with other vectors even if one fails
       }
     }
 
@@ -355,9 +336,8 @@ export async function verifyDocumentStorage(fileId: string) {
 
     const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
     
-    // Query for all vectors with this fileId
     const queryResponse = await index.query({
-      vector: new Array(1536).fill(0), // Zero vector to get all matches
+      vector: new Array(1536).fill(0),
       topK: 1000,
       filter: {
         fileId: { $eq: fileId },
@@ -367,7 +347,7 @@ export async function verifyDocumentStorage(fileId: string) {
 
     console.log('Found vectors:', queryResponse.matches?.length || 0);
     if (queryResponse.matches && queryResponse.matches.length > 0) {
-      console.log('First vector preview:', queryResponse.matches[0].metadata?.text?.substring(0, 200) + '...');
+      console.log('First vector preview:', queryResponse.matches[0].metadata?.text ? (queryResponse.matches[0].metadata.text as string).substring(0, 200) + '...' : 'No text available');
       console.log('Average score:', queryResponse.matches.reduce((acc, m) => acc + (m.score || 0), 0) / queryResponse.matches.length);
     }
 

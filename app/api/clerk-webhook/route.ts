@@ -2,7 +2,6 @@ import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
-import { currentProfile } from '@/lib/current-profile'
 
 
 export async function POST(req: Request) {
@@ -12,30 +11,25 @@ export async function POST(req: Request) {
     throw new Error('Error: Please add SIGNING_SECRET from Clerk Dashboard to .env or .env')
   }
 
-  // Create new Svix instance with secret
   const wh = new Webhook(SIGNING_SECRET)
 
-    // Get headers
     const headerPayload = await headers()
     const svix_id = headerPayload.get('svix-id')
     const svix_timestamp = headerPayload.get('svix-timestamp')
     const svix_signature = headerPayload.get('svix-signature')
 
-    // If there are no headers, error out
     if (!svix_id || !svix_timestamp || !svix_signature) {
         return new Response('Error: Missing Svix headers', {
             status: 400,
         })
     }
 
-    // Get body
     const payload = await req.json()
     const body = JSON.stringify(payload)
-    // const profile = await currentProfile();
 
     let evt: WebhookEvent
 
-    // Verify payload with headers
+
     try {
         evt = wh.verify(body, {
             'svix-id': svix_id,
@@ -49,19 +43,11 @@ export async function POST(req: Request) {
         })
     }
 
-    // Do something with payload
-    // For this guide, log payload to console
     const { id } = evt.data
     const eventType = evt.type
 
     if (eventType === "user.updated") {
         const { id, first_name, last_name, image_url } = evt.data;
-
-        // Ensure profile is fetched correctly
-        // if (!profile) {
-        //     console.error('Profile not found for the current user.');
-        //     return new Response('Profile not found', { status: 404 });
-        // }
 
         try {
             const profile = await db.profile.findUnique({
@@ -72,7 +58,7 @@ export async function POST(req: Request) {
             }
             
             const updatedProfile = await db.profile.update({
-                where: { userId: id }, // Ensure this userId exists
+                where: { userId: id },
                 data: { 
                     name: `${first_name} ${last_name}`, 
                     imageUrl: image_url 

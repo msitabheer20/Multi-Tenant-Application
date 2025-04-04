@@ -2,7 +2,6 @@
 
 import { lazy, Suspense, useEffect, useState } from "react"
 
-// Lazy load modals
 const CreateServerModal = lazy(() => import("@/components/modals/create-server-modal").then(mod => ({ default: mod.CreateServerModal })));
 const InviteModal = lazy(() => import("@/components/modals/invite-modal").then(mod => ({ default: mod.InviteModal })));
 const EditServerModal = lazy(() => import("@/components/modals/edit-server-modal").then(mod => ({ default: mod.EditServerModal })));
@@ -16,7 +15,6 @@ const MessageFileModal = lazy(() => import("@/components/modals/message-file-mod
 const DeleteMessageModal = lazy(() => import("@/components/modals/delete-message-modal").then(mod => ({ default: mod.DeleteMessageModal })));
 const CreateBotModal = lazy(() => import("@/components/modals/create-bot-modal").then(mod => ({ default: mod.CreateBotModal })));
 
-// Define fallback loading component
 const ModalFallback = () => <div className="hidden"></div>;
 
 export const ModalProvider = () => {

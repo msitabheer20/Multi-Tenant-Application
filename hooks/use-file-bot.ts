@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { FileData } from '@/components/chat/chat-file-upload';
 
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -44,14 +50,12 @@ export function useFileBot(serverId: string): UseFileBotProps {
   const [isPdfLibLoaded, setIsPdfLibLoaded] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  // Save messages to localStorage when they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(`file-bot-chat-messages-${serverId}`, JSON.stringify(messages));
     }
   }, [messages, serverId]);
 
-  // Initialize Pinecone index when component mounts
   useEffect(() => {
     const setupPinecone = async () => {
       try {
@@ -77,18 +81,15 @@ export function useFileBot(serverId: string): UseFileBotProps {
     setupPinecone();
   }, []);
 
-  // Initialize PDF.js library
   useEffect(() => {
     const initPdfJs = async () => {
       try {
         setIsPdfLibLoading(true);
-        // Load PDF.js script
         const script = document.createElement('script');
         script.src = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
         script.async = true;
 
         script.onload = () => {
-          // Set up the worker
           window.pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
           setIsPdfLibLoaded(true);
           setIsPdfLibLoading(false);
@@ -122,7 +123,6 @@ export function useFileBot(serverId: string): UseFileBotProps {
     initPdfJs();
   }, []);
 
-  // Process a PDF file to extract text
   const processPdfFile = async (file: File): Promise<string> => {
     if (!window.pdfjsLib) {
       throw new Error('PDF.js library not loaded');
@@ -159,14 +159,12 @@ export function useFileBot(serverId: string): UseFileBotProps {
     }
   };
 
-  // Handle file upload
   const handleFileUpload = async (files: FileList | null) => {
     if (!files?.length) return;
 
     setIsProcessing(true);
     setProcessingStatus('Processing files...');
 
-    // Add single upload message
     setMessages(prev => [
       ...prev,
       {
@@ -219,7 +217,6 @@ export function useFileBot(serverId: string): UseFileBotProps {
             throw new Error('No text content could be extracted from the PDF. The file might be image-based or have security restrictions.');
           }
 
-          // Process document through Pinecone
           const response = await fetch('/api/process-document', {
             method: 'POST',
             headers: {
@@ -238,10 +235,8 @@ export function useFileBot(serverId: string): UseFileBotProps {
             throw new Error('Failed to process document in vector database');
           }
         } else {
-          // Handle text files
           const text = await file.text();
 
-          // Process document through Pinecone
           const response = await fetch('/api/process-document', {
             method: 'POST',
             headers: {
@@ -264,7 +259,6 @@ export function useFileBot(serverId: string): UseFileBotProps {
         }
       }
 
-      // Add completion message
       setMessages(prev => [
         ...prev,
         {
@@ -291,7 +285,6 @@ export function useFileBot(serverId: string): UseFileBotProps {
     }
   };
 
-  // Handle message submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -356,10 +349,8 @@ export function useFileBot(serverId: string): UseFileBotProps {
     }
   };
 
-  // Handle file removal
   const handleRemoveFile = async (fileId: string) => {
     try {
-      // Remove file from Pinecone
       const response = await fetch('/api/delete-file', {
         method: 'POST',
         headers: {
@@ -372,10 +363,8 @@ export function useFileBot(serverId: string): UseFileBotProps {
         throw new Error('Failed to delete file');
       }
 
-      // Remove file from local state
       setFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
 
-      // Add system message about file removal
       setMessages(prev => [
         ...prev,
         {
@@ -399,7 +388,6 @@ export function useFileBot(serverId: string): UseFileBotProps {
     }
   };
 
-  // Clear chat history
   const clearHistory = () => {
     localStorage.removeItem(`file-bot-chat-messages-${serverId}`);
     setMessages([]);

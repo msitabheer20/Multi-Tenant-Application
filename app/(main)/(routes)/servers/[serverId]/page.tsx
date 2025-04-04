@@ -11,7 +11,7 @@ interface ServerIdPageProps {
 const ServerIdPage = async ({
     params
 }: ServerIdPageProps) => {
-    // Await the params object
+
     const resolvedParams = await Promise.resolve(params);
     const serverId = resolvedParams.serverId;
 

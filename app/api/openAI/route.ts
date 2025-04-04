@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 
 export const runtime = 'edge';
 
-// Use AI SDK for OpenAI
+
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
@@ -21,8 +21,6 @@ These specific phrases will activate the theme change functionality in the appli
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-
-    // Ensure messages is an array
     if (!messages || !Array.isArray(messages)) {
       return new Response(
         JSON.stringify({ error: 'Messages array is required' }),
@@ -30,7 +28,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Set up streaming with AI SDK
     const stream = streamText({
       model: openai('gpt-4o'),
       system: initialSystemPrompt,
@@ -39,7 +36,6 @@ export async function POST(req: Request) {
       maxTokens: 500,
     });
 
-    // Return streaming response
     return stream.toDataStreamResponse();
   } catch (error) {
     console.error('Error in chat API:', error);

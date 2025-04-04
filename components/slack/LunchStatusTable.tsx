@@ -51,7 +51,6 @@ export const LunchStatusTable: React.FC<LunchStatusTableProps> = ({ data }) => {
                 return a.name.localeCompare(b.name);
               })
               .map((user, index) => {
-                // Calculate time gap if both timestamps exist
                 let timeGap = null;
                 let isLongBreak = false;
 
@@ -63,7 +62,6 @@ export const LunchStatusTable: React.FC<LunchStatusTableProps> = ({ data }) => {
                   isLongBreak = diffInMinutes > 30;
                 }
 
-                // Set status style based on status - use zinc colors for dark mode
                 let statusBgClass = '';
                 let statusTextClass = '';
 
@@ -85,7 +83,6 @@ export const LunchStatusTable: React.FC<LunchStatusTableProps> = ({ data }) => {
                   ? "missing #lunchend/lunchover"
                   : user.status;
 
-                // Format timestamps
                 const startTime = user.lunchStartTime
                   ? new Date(user.lunchStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                   : '-';
@@ -94,7 +91,6 @@ export const LunchStatusTable: React.FC<LunchStatusTableProps> = ({ data }) => {
                   ? new Date(user.lunchEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                   : '-';
 
-                // Row background color for alternating rows
                 const rowBgClass = index % 2 === 0 ? 'bg-zinc-50 dark:bg-zinc-800/70' : 'bg-white dark:bg-zinc-900/50';
 
                 return (

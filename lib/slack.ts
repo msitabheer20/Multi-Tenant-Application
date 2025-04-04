@@ -86,12 +86,10 @@ async function fetchSlackApi(method: string, params: Record<string, any> = {}): 
         });
 
         if (!response.ok) {
-            // Check for rate limiting
             if (response.status === 429) {
                 const retryAfter = parseInt(response.headers.get('Retry-After') || '30', 10);
                 console.warn(`Rate limited by Slack API. Retry after ${retryAfter} seconds.`);
 
-                // Wait and retry once after rate limiting
                 await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
                 return fetchSlackApi(method, params);
             }
@@ -101,9 +99,7 @@ async function fetchSlackApi(method: string, params: Record<string, any> = {}): 
 
         const data = await response.json();
 
-        // Handle pagination automatically if needed and the 'cursor' param isn't already set
         if (data.ok && data.response_metadata?.next_cursor && !params.cursor) {
-            // If a paginated response with more results, fetch the next page
             console.log(`Fetching next page for ${method} with cursor: ${data.response_metadata.next_cursor}`);
 
             const nextPageResponse = await fetchSlackApi(method, {
@@ -111,7 +107,6 @@ async function fetchSlackApi(method: string, params: Record<string, any> = {}): 
                 cursor: data.response_metadata.next_cursor
             });
 
-            // Combine results from both pages
             if (Array.isArray(data.members)) {
                 data.members = [...data.members, ...(nextPageResponse.members || [])];
             }
@@ -154,37 +149,29 @@ async function getUserLunchTags(
             throw new Error(`Failed to fetch channel history: ${response.error}`);
         }
 
-        // Filter messages from this user only
         const userMessages = response.messages.filter((msg: any) =>
             msg.user === userId && msg.text
         );
 
-        // Sort messages by timestamp (oldest first)
         userMessages.sort((a: any, b: any) => parseFloat(a.ts) - parseFloat(b.ts));
 
-        // Find the first #lunchstart
         const lunchStartMessage = userMessages.find((msg: any) =>
             msg.text.toLowerCase().includes('#lunchstart')
         );
 
-        // If no start message found, return empty
         if (!lunchStartMessage) {
             return {};
         }
 
         const startTimestamp = new Date(parseInt(lunchStartMessage.ts) * 1000).toISOString();
 
-        // Find the first #lunchend or #lunchover that occurs AFTER the lunchstart
         const lunchEndMessage = userMessages.find((msg: any) => {
-            // Check if it's an end tag
             const isEndTag = msg.text.toLowerCase().includes('#lunchend') ||
                 msg.text.toLowerCase().includes('#lunchover');
 
-            // Only count it if it's after the start tag
             return isEndTag && parseFloat(msg.ts) > parseFloat(lunchStartMessage.ts);
         });
 
-        // If no end message found after start, return just the start
         if (!lunchEndMessage) {
             return { startTimestamp };
         }
@@ -203,19 +190,15 @@ export async function getSlackLunchStatus(
     timeframe: "today" | "yesterday" | "this_week" = "today"
 ): Promise<SlackLunchReport> {
     try {
-        // Step 1: Find channel ID from name
         const channelId = await findChannelId(channelName);
         if (!channelId) {
             throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
         }
 
-        // Step 2: Get all users in the channel
         const users = await getChannelUsers(channelId);
 
-        // Step 3: Get timestamp for start of timeframe
         const startTime = getTimeframeStart(timeframe);
 
-        // Step 4: Check each user's lunch tag status
         const lunchStatusList: LunchStatus[] = await Promise.all(
             users.map(async (user) => {
 
@@ -241,7 +224,6 @@ export async function getSlackLunchStatus(
             })
         );
 
-        // Step 5: Filter out users who have completed both tags
         const incompleteUsers = lunchStatusList.filter(
             user => user.status !== "complete"
         );
@@ -263,7 +245,6 @@ async function findChannelId(channelName: string): Promise<string | null> {
     try {
         console.log(`Searching for channel with name: ${channelName}`);
 
-        // First try with conversations.list which requires channels:read scope
         const response = await fetchSlackApi('conversations.list', {
             types: 'public_channel,private_channel',
             exclude_archived: true,
@@ -281,7 +262,6 @@ async function findChannelId(channelName: string): Promise<string | null> {
             throw new Error(`Failed to list channels: ${response.error}`);
         }
 
-        // Debug info - list all channels for diagnostic purposes
         if (response.channels && response.channels.length > 0) {
             console.log(`Found ${response.channels.length} channels. Available channels:`);
             response.channels.forEach((ch: any) => {
@@ -291,7 +271,6 @@ async function findChannelId(channelName: string): Promise<string | null> {
             console.log('No channels found in the response');
         }
 
-        // Find the channel by name
         const channel = response.channels.find(
             (ch: any) => ch.name.toLowerCase() === channelName.toLowerCase()
         );
@@ -301,7 +280,6 @@ async function findChannelId(channelName: string): Promise<string | null> {
             return null;
         }
 
-        // Check if the bot is a member of the channel
         if (!channel.is_member) {
             console.error(`Bot is not a member of channel #${channelName} (${channel.id})`);
             return null;
@@ -317,7 +295,6 @@ async function findChannelId(channelName: string): Promise<string | null> {
 
 async function getChannelUsers(channelId: string): Promise<SlackUser[]> {
     try {
-        // Add retry logic with exponential backoff
         let retries = 0;
         const maxRetries = 3;
 
@@ -325,7 +302,7 @@ async function getChannelUsers(channelId: string): Promise<SlackUser[]> {
             try {
                 const response = await fetchSlackApi('conversations.members', {
                     channel: channelId,
-                    limit: 1000 // Maximum allowed by Slack API
+                    limit: 1000 
                 });
 
                 if (!response.ok) {
@@ -338,12 +315,9 @@ async function getChannelUsers(channelId: string): Promise<SlackUser[]> {
                     throw new Error(`Failed to get channel members: ${response.error}`);
                 }
 
-                // Process only active users to avoid errors with deleted accounts
-                // Use concurrency limit to avoid rate limiting
                 const userDetails: SlackUser[] = [];
                 const userIds = response.members || [];
 
-                // Process users in batches of 10 to avoid rate limiting
                 const batchSize = 10;
                 for (let i = 0; i < userIds.length; i += batchSize) {
                     const batch = userIds.slice(i, i + batchSize);
@@ -358,10 +332,8 @@ async function getChannelUsers(channelId: string): Promise<SlackUser[]> {
                         })
                     );
 
-                    // Filter out any null results from errors
                     userDetails.push(...batchResults.filter(Boolean) as SlackUser[]);
 
-                    // Small delay between batches to avoid rate limiting
                     if (i + batchSize < userIds.length) {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
@@ -377,12 +349,10 @@ async function getChannelUsers(channelId: string): Promise<SlackUser[]> {
 
                 console.warn(`Retrying getChannelUsers (${retries}/${maxRetries})...`);
 
-                // Exponential backoff
                 await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
             }
         }
 
-        // This should never be reached due to the throw in the loop
         throw new Error('Max retries exceeded');
     } catch (error) {
         console.error('Error getting channel users:', error);
@@ -431,7 +401,7 @@ function getTimeframeStart(timeframe: "today" | "yesterday" | "this_week"): numb
             return now.getTime();
         case "this_week":
             const day = now.getDay();
-            const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1);
             now.setDate(diff);
             now.setHours(0, 0, 0, 0);
             return now.getTime();
@@ -444,7 +414,7 @@ async function getUserUpdateTag(
     since: number
 ): Promise<Array<{ timestamp: string; content: string, date: string }>> {
     try {
-        const sinceTimestamp = Math.floor(since / 1000); // Convert to seconds for Slack API
+        const sinceTimestamp = Math.floor(since / 1000);
 
         const response = await fetchSlackApi('conversations.history', {
             channel: channelId,
@@ -462,17 +432,14 @@ async function getUserUpdateTag(
             throw new Error(`Failed to fetch channel history: ${response.error}`);
         }
 
-        // Filter messages from this user only that contain #update
         const updateMessages = response.messages.filter((msg: any) =>
             msg.user === userId &&
             msg.text &&
             msg.text.toLowerCase().includes('#update')
         );
 
-        // Sort messages by timestamp (newest first)
         updateMessages.sort((a: any, b: any) => parseFloat(b.ts) - parseFloat(a.ts));
 
-        // Process all update messages
         return updateMessages.map((message: any) => {
             const timestampDate = new Date(parseInt(message.ts) * 1000);
             const timestamp = timestampDate.toISOString();
@@ -482,7 +449,6 @@ async function getUserUpdateTag(
                 year: 'numeric'
             });
 
-            // Extract the content after #update
             let content = message.text;
             const updateIndex = content.toLowerCase().indexOf('#update');
             if (updateIndex >= 0) {
@@ -507,15 +473,12 @@ export async function getSlackUpdateStatus(
             throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
         }
 
-        // Get timestamp based on timeframe
         const since = getTimeframeStart(timeframe);
         console.log(`Getting update status since: ${new Date(since).toISOString()}`);
 
-        // Get all users in the channel
         const users = await getChannelUsers(channelId);
         console.log(`Found ${users.length} users in channel`);
 
-        // For each user, check if they've posted an update today
         const userPromises = users.map(async (user) => {
             const updateInfo = await getUserUpdateTag(user.id, channelId, since);
 
@@ -549,7 +512,7 @@ async function getUserReportTag(
     since: number
 ): Promise<Array<{ timestamp: string; content: string, date: string }>> {
     try {
-        const sinceTimestamp = Math.floor(since / 1000); // Convert to seconds for Slack API
+        const sinceTimestamp = Math.floor(since / 1000);
 
         const response = await fetchSlackApi('conversations.history', {
             channel: channelId,
@@ -567,17 +530,14 @@ async function getUserReportTag(
             throw new Error(`Failed to fetch channel history: ${response.error}`);
         }
 
-        // Filter messages from this user only that contain #report
         const reportMessages = response.messages.filter((msg: any) =>
             msg.user === userId &&
             msg.text &&
             msg.text.toLowerCase().includes('#report')
         );
 
-        // Sort messages by timestamp (newest first)
         reportMessages.sort((a: any, b: any) => parseFloat(b.ts) - parseFloat(a.ts));
 
-        // Process all report messages
         return reportMessages.map((message: any) => {
             const timestampDate = new Date(parseInt(message.ts) * 1000);
             const timestamp = timestampDate.toISOString();
@@ -587,7 +547,6 @@ async function getUserReportTag(
                 year: 'numeric'
             });
 
-            // Extract the content after #report
             let content = message.text;
             const reportIndex = content.toLowerCase().indexOf('#report');
             if (reportIndex >= 0) {
@@ -612,15 +571,12 @@ export async function getSlackReportStatus(
             throw new Error(`Channel #${channelName} not found. Please check if the channel exists and the bot has been added to it.`);
         }
 
-        // Get timestamp based on timeframe
         const since = getTimeframeStart(timeframe);
         console.log(`Getting report status since: ${new Date(since).toISOString()}`);
 
-        // Get all users in the channel
         const users = await getChannelUsers(channelId);
         console.log(`Found ${users.length} users in channel`);
 
-        // For each user, check if they've posted a report in the timeframe
         const userPromises = users.map(async (user) => {
             const reportTag = await getUserReportTag(user.id, channelId, since);
 

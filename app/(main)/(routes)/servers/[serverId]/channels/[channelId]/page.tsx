@@ -15,7 +15,7 @@ interface ChannelIdPageProps {
 const ChannelIdPage = async ({
     params
 }: ChannelIdPageProps) => {
-    // Resolve params before using them
+
     const resolvedParams = await Promise.resolve(params);
     const serverId = resolvedParams.serverId;
     const channelId = resolvedParams.channelId;

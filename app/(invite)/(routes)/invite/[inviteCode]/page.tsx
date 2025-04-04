@@ -11,7 +11,7 @@ interface InviteCodePageProps {
 const InviteCodePage = async({
     params
 }: InviteCodePageProps) => {
-    // Resolve params before using them
+
     const resolvedParams = await Promise.resolve(params);
     const inviteCode = resolvedParams.inviteCode;
     

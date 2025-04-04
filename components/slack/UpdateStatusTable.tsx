@@ -43,26 +43,20 @@ export const UpdateStatusTable: React.FC<UpdateStatusTableProps> = ({ data, onSe
           <tbody className="bg-white dark:bg-zinc-900/50 divide-y divide-gray-200 dark:divide-zinc-800">
             {/* Get all updates from all users */}
             {data.users
-              // Filter out users with name "checkbot" and only show users with updates
               .filter(user => user.name !== "checkbot" && user.hasPosted && user.allUpdates)
-              // Sort users by name
               .sort((a, b) => a.name.localeCompare(b.name))
               .flatMap((user) => {
-                // For each user, create a row for each update
                 return user.allUpdates!.map((update, updateIndex) => {
-                  // Format timestamp
                   const postedTime = update.timestamp
                     ? new Date(update.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     : '-';
 
                     const postedDate = update.date || '-';
 
-                  // Row background for alternating users
                   const baseRowBgClass = updateIndex % 2 === 0
                     ? 'bg-zinc-50 dark:bg-zinc-800/70'
                     : 'bg-white dark:bg-zinc-900/50';
 
-                  // Different shade for first row of each user to help visually group updates
                   const rowBgClass = updateIndex === 0
                     ? `${baseRowBgClass} border-t-2 border-zinc-300 dark:border-zinc-700`
                     : baseRowBgClass;

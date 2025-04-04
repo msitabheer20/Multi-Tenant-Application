@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const response = await openai.chat.completions.create({
       messages: [{ role: "user", content: message }],
-      model: "gpt-4", // Or "gpt-3.5-turbo"
+      model: "gpt-4",
     });
 
     res.json({ reply: response.choices[0].message.content });

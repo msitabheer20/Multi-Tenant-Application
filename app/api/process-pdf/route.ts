@@ -12,11 +12,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Convert File to base64
     const arrayBuffer = await file.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString('base64');
     
-    // Return the base64 data to be processed on the client side
     return NextResponse.json({ 
       base64,
       filename: file.name,

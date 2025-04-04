@@ -33,11 +33,9 @@ export const SocketProvider = ({
     const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
-        // Delay socket initialization to improve initial load time
         const initializeSocket = () => {
             if (isInitialized) return;
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const socketInstance = new (ClientIO as any)(process.env.NEXT_PUBLIC_SITE_URL!, {
                 path: "/api/socket/io",
                 addTrailingSlash: false,
@@ -55,13 +53,11 @@ export const SocketProvider = ({
             setIsInitialized(true);
         };
 
-        // Delay socket initialization to prioritize UI rendering
         const timer = setTimeout(initializeSocket, 500);
 
         return () => {
             clearTimeout(timer);
             if (socket) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (socket as any).disconnect();
             }
         }

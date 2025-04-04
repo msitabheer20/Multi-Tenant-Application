@@ -162,7 +162,6 @@ export async function POST(req: Request) {
 
 		const responseMessage = completion.choices[0].message;
 
-		// Check if the model wants to call a function
 		const toolCalls = responseMessage.tool_calls;
 		if (toolCalls) {
 			console.log('\n=== Function Call Detected ===');
@@ -174,7 +173,6 @@ export async function POST(req: Request) {
 
 					console.log(`Function call: setTheme(${theme})`);
 
-					// Return with function call information
 					return NextResponse.json({
 						content: responseMessage.content || "I'll change the theme for you.",
 						functionCall: {
@@ -191,7 +189,6 @@ export async function POST(req: Request) {
 
 					console.log(`Function call: createServer(${name}, ${imageUrl})`);
 
-					// Return with function call information
 					return NextResponse.json({
 						content: responseMessage.content || "I'll create a server for you.",
 						functionCall: {
@@ -219,7 +216,6 @@ export async function POST(req: Request) {
 
 				else if (toolCall.type === 'function' && toolCall.function.name === 'deleteServer') {
 
-					// Return with function call information
 					return NextResponse.json({
 						content: responseMessage.content || "I'll delete the server for you.",
 						functionCall: {

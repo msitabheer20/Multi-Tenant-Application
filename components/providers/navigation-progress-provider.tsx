@@ -29,7 +29,6 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastNavigationRef = useRef<string>('');
   
-  // Clear all timers
   const clearAllTimers = useCallback(() => {
     if (progressInterval.current) {
       clearInterval(progressInterval.current);
@@ -49,14 +48,11 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
     clearAllTimers();
     
     setIsNavigating(true);
-    setProgress(10); // Start at a lower percentage for a more visible progression
-    
-    // Use a logarithmic growth pattern for smoother progression
-    // Start with small increments and gradually increase
+    setProgress(10);
+
     let increment = 2;
     progressInterval.current = setInterval(() => {
       setProgress((prev) => {
-        // Gradually slow down as we approach 85%
         if (prev >= 75) {
           increment = 0.5;
         } else if (prev >= 50) {
@@ -73,9 +69,8 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
         }
         return prev + increment;
       });
-    }, 200); // Longer interval for slower updates
+    }, 200);
     
-    // Longer safety timeout for the slower progression
     navigationTimeoutRef.current = setTimeout(() => {
       completeNavigation();
     }, 6000);
@@ -84,7 +79,6 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
   const completeNavigation = useCallback(() => {
     clearAllTimers();
     
-    // Smooth transition to 100%
     setProgress(90);
     setTimeout(() => {
       setProgress(100);
@@ -93,12 +87,10 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
     completionTimeout.current = setTimeout(() => {
       setIsNavigating(false);
       setProgress(0);
-    }, 500); // Longer completion animation for smoother fade-out
+    }, 500);
   }, [clearAllTimers]);
 
-  // Handle navigation events with debouncing
   useEffect(() => {
-    // Skip initial render navigation
     if (!lastNavigationRef.current) {
       lastNavigationRef.current = `${pathname}?${searchParams?.toString() || ''}`;
       return;
@@ -106,24 +98,20 @@ export const NavigationProgressProvider = ({ children }: { children: React.React
     
     const url = `${pathname}?${searchParams?.toString() || ''}`;
     
-    // Skip navigation progress for same URL
     if (url === lastNavigationRef.current) {
       return;
     }
     
-    // Different URL - update ref first
     lastNavigationRef.current = url;
     
     startNavigation();
     
-    // Complete the navigation after a longer delay for smoother appearance
     setTimeout(() => {
       completeNavigation();
     }, 1200);
     
   }, [pathname, searchParams, startNavigation, completeNavigation]);
   
-  // Clean up on unmount
   useEffect(() => {
     return clearAllTimers;
   }, [clearAllTimers]);

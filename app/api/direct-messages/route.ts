@@ -76,7 +76,6 @@ export async function GET(
             nextCursor
         })
     } catch (error) {
-        // console.log("[DIRECT_MESSAGES_GET]", error);
         return new NextResponse("Internal Error", { status: 500 });
     }
 }

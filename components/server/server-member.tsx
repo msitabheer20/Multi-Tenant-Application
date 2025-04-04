@@ -36,7 +36,6 @@ export const ServerMember = ({
 
     const onlyServerId = !params?.memberId;
     
-    // Check if we're on a bot-related page
     const isOnBotPage = pathname?.includes('/bot') && isBot;
     const isOnFileBot = pathname?.includes('/file-bot') && isFileBot;
     const isOnSlackBot = pathname?.includes('/slackbot') && isSlackBot;

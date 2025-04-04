@@ -21,7 +21,6 @@ export const BotUI: React.FC<BotUIProps> = ({ serverId }) => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });

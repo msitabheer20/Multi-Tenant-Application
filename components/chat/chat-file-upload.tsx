@@ -51,7 +51,6 @@ export default function FileUploadModal({
     const droppedFiles = e.dataTransfer.files;
 
     if (selectedFiles) {
-      // Combine existing files with new files
       const dt = new DataTransfer();
       Array.from(selectedFiles).forEach(file => dt.items.add(file));
       Array.from(droppedFiles).forEach(file => dt.items.add(file));
@@ -66,7 +65,6 @@ export default function FileUploadModal({
     if (!newFiles) return;
 
     if (selectedFiles) {
-      // Combine existing files with new files
       const dt = new DataTransfer();
       Array.from(selectedFiles).forEach(file => dt.items.add(file));
       Array.from(newFiles).forEach(file => dt.items.add(file));

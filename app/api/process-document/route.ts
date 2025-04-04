@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     //   contentPreview: content.substring(0, 200) + '...'
     // });
 
-    // Process and store the document in Pinecone
     // console.log('\nStarting document processing...');
     const numChunks = await upsertDocument(fileId, content);
     const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
