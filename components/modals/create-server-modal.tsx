@@ -119,7 +119,7 @@ export const CreateServerModal = () => {
 										<FormControl>
 											<Input
 												disabled={isLoading}
-												className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black/80 focus-visible:ring-offset-0 font-bold"
+												className="bg-zinc-300/50 dark:bg-zinc-700/50 border-0 focus-visible:ring-0 text-black/80 focus-visible:ring-offset-0"
 												placeholder="Enter Organization Name"
 												{...field}
 											/>

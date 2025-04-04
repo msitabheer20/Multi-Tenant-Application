@@ -125,7 +125,7 @@ export const EditChannelModal = () => {
 										<FormControl>
 											<Input
 												disabled={isLoading}
-												className="bg-zinc-300/50 border-0 focus-visible:ring-0 text-black/80 focus-visible:ring-offset-0 font-bold"
+												className="bg-zinc-300/50 dark:text-zinc-300 dark:bg-zinc-700/50 border-0 focus-visible:ring-0 text-black/80 focus-visible:ring-offset-0"
 												placeholder="Enter Channel Name"
 												{...field}
 											/>
@@ -148,7 +148,7 @@ export const EditChannelModal = () => {
 										>
 											<FormControl>
 												<SelectTrigger
-													className="bg-zinc-300/50 border-0 focus:ring-0 text-black/80 ring-offset-0 focus:ring-offset-0 capitalize outline-none font-bold"
+													className="bg-zinc-300/50 dark:bg-zinc-700/50 border-0 focus:ring-0 dark:text-zinc-300 text-black/80 ring-offset-0 focus:ring-offset-0 capitalize outline-none"
 												>
 													<SelectValue placeholder="Select a channel type" />
 												</SelectTrigger>
@@ -158,7 +158,7 @@ export const EditChannelModal = () => {
 													<SelectItem
 														key={type}
 														value={type}
-														className="capitalize font-bold"
+														className="capitalize"
 													>
 														{type.toLowerCase()}
 													</SelectItem>

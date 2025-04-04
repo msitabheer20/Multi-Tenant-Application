@@ -9,6 +9,7 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	Command,
 } from "@/components/ui/command";
 import { useRouter, useParams } from "next/navigation";
 
@@ -74,30 +75,36 @@ export const ServerSearch = ({
 					<span className="text-xs">⌘</span> K
 				</kbd>
 			</button>
-			<CommandDialog open={open} onOpenChange={setOpen}>
-				<CommandInput placeholder="Search all channels and members" />
-				<CommandList>
-					<CommandEmpty>
-						No Results found
-					</CommandEmpty>
-					{data.map(({ label, type, data }) => {
-						if (!data?.length) return null;
 
-						return (
-							<CommandGroup key={label} heading={label}>
-								{data?.map(({ id, icon, name }) => {
-									return (
-										<CommandItem key={id} onSelect={() => onClick({id, type})}>
-											{icon}
-											<span>{name}</span>
-										</CommandItem>
-									)
-								})}
-							</CommandGroup>
-						)
-					})}
-				</CommandList>
-			</CommandDialog>
+			{open && (
+				<CommandDialog open={open} onOpenChange={setOpen}>
+					<Command>
+						<CommandInput placeholder="Search all channels and members" />
+						<CommandList>
+							<CommandEmpty>No Results found</CommandEmpty>
+							{data.map(({ label, type, data }) => {
+								if (!data?.length) return null;
+
+								return (
+									<CommandGroup key={label} heading={label}>
+										{data?.map(({ id, icon, name }) => {
+											return (
+												<CommandItem 
+													key={id} 
+													onSelect={() => onClick({id, type})}
+												>
+													{icon}
+													<span>{name}</span>
+												</CommandItem>
+											)
+										})}
+									</CommandGroup>
+								)
+							})}
+						</CommandList>
+					</Command>
+				</CommandDialog>
+			)}
 		</>
 	)
 }
